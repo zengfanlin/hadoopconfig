@@ -1,0 +1,25 @@
+linux:
+修改IP地址：
+[root@localhost ~]# cd /etc/sysconfig/network-scripts
+[root@localhost network-scripts]# vi ifcfg-ens33
+TYPE=Ethernet
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=dhcp
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=ens33
+UUID=e06bc2b1-0a3f-486c-90f9-7d91d0b875cd
+DEVICE=ens33
+ONBOOT=yes
+IPADDR=192.168.32.127
+
+ZONE=public
+
+[root@localhost ~]# cp --help
+/-i 查找-i的字符

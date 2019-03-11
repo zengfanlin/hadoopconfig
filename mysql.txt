@@ -1,0 +1,20 @@
+mysql:
+
+[root@hadoop01 ~]# systemctl stop mysqld.service
+[root@hadoop01 ~]# systemctl start mysqld.service
+
+mysql -uroot -p
+
+123456密码
+
+一、允许root用户在任何地方进行远程登录，并具有所有库任何操作权限，具体操作如下：
+在本机先使用root用户登录mysql：
+mysql -u root -p"youpassword" 
+进行授权操作：
+mysql> grant all privileges on *.* to 'root'@'%' identified by '123456';
+Query OK, 0 rows affected, 1 warning (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+退出
+exit

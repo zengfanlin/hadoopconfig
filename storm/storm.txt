@@ -1,0 +1,41 @@
+storm（实时分析）:
+topology：拓扑（agent）
+Spout：喷头（source 流式数据）
+bolt：阀门（相当于Chanel bolt自定义，数据清洗，串联，agent串联）
+tuple（数据承载，类似map，复杂的数据结构
+
+storm.zookeeper.servers:
+    - "hadoop01"
+    - "hadoop02"
+    - "hadoop03"
+
+nimbus.host: "hadoop01"
+storm.local.dir: "/usr/local/src/storm/apache-storm-0.9.3/tmp"
+
+
+export STORM_HOME=/usr/local/src/storm/apache-storm-0.9.3
+export PATH=$STORM_HOME:$PATH
+source /etc/profile
+
+拷贝到其他节点：
+scp -r storm root@hadoop02:/usr/local/src/
+scp -r storm root@hadoop03:/usr/local/src/
+
+主：hadoop01进入bin目录： cd /usr/local/src/storm/apache-storm-0.9.3/bin/
+core进程
+./storm ui >/dev/null 2>&1 &
+./storm nimbus >/dev/null 2>&1 &
+
+从节点02和03：
+cd  /usr/local/src/storm/apache-storm-0.9.3/bin/
+./storm supervisor >/dev/null 2>&1 &
+可以访问：
+http://hadoop01:8080/index.html
+
+
+Trident：
+原生api通过bolt串接，trident通过多个function和多个filter
+
+kafka 将数据传到storm之后，trident方式利用stream.each()方法吧kafka中的数据封装tuple(str,string)获取它所有的属性
+
+clearbolt清洗 去除无用的数据  分装字段 成新的tuple，传递个下一个bolt

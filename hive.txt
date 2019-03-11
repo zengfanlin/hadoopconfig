@@ -1,0 +1,160 @@
+hive（离线分析）:
+启动hadoop：
+ start-all.sh
+ 
+[root@hadoop01 hive]# cd apache-hive-1.2.2-bin
+[root@hadoop01 apache-hive-1.2.2-bin]# cd bin/
+[root@hadoop01 bin]# ./hive
+jsp： RunJar
+
+
+Logging initialized using configuration in jar:file:/usr/local/src/hive/apache-hive-1.2.2-bin/lib/hive-common-1.2.2.jar!/hive-log4j.properties
+hive> show databases;
+OK
+default
+Time taken: 0.92 seconds, Fetched: 1 row(s)
+
+语句：
+create table tb_teacher (id int,name string);
+show tables;
+desc tb_teacher;
+
+ create database jtdb;
+ use jtdb;
+ show tables;
+  create table tb_user (id int,name string);
+  show tables;
+  insert into tb_user values(1,"tony");
+  
+load data  local inpath '/usr/local/src/hive/user.txt' into table tb_user;
+
+创建表的时候要指定分隔符：
+create table tb_user2 (id int,name string) row format delimited fields terminated by ' ';
+
+create table student(id string,birthday string,grade int,m1 int,m2 int,m3 int,m4 int,memo string)
+row format delimited fields terminated by ',';
+load data  local inpath '/usr/local/src/hive/user.txt' into table tb_user2;
+
+
+mysql存储元数据：
+COLUMNS_V2
+SDS
+DBS
+TBLS
+
+外部表：
+
+未被external修饰的是内部表（managed table），被external修饰的为外部表（external table）； 
+区别： 
+内部表数据由Hive自身管理，外部表数据由HDFS管理； 
+内部表数据存储的位置是hive.metastore.warehouse.dir（默认：/user/hive/warehouse），外部表数据的存储位置由自己制定； 
+删除内部表会直接删除元数据（metadata）及存储数据；删除外部表仅仅会删除元数据，HDFS上的文件并不会被删除； 
+对内部表的修改会将修改直接同步给元数据，而对外部表的表结构和分区进行修改，则需要修复（MSCK REPAIR TABLE table_name;）
+
+
+cd /usr/local/src/hadoop/hadoop-2.7.7/bin/
+[root@hadoop01 bin]# ./hdfs dfs -mkdir /data
+[root@hadoop01 bin]# ./hdfs dfs -mkdir /data
+[root@hadoop01 bin]# ./hdfs dfs -put /usr/local/src/hive/book.txt /data
+创建：
+create external table ext_book(
+    id      int
+   ,name    string
+) row format delimited fields terminated by '\t'
+location '/data';
+
+show tables;
+OK
+ext_book
+tb_user
+Time taken: 0.149 seconds, Fetched: 2 row(s)
+hive> select * from ext_book;
+OK
+1       西游记
+2       水浒传
+3       三国演义
+4       红楼梦
+
+创建分区表：
+
+create table tb_book(id string, name string)
+PARTITIONED BY (category string)
+row format delimited fields terminated by '\t';
+
+show create tb_book;
+load data local inpath '/usr/local/src/hive/zh.txt' overwrite into table tb_book partition(category='china');
+load data local inpath '/usr/local/src/hive/jp.txt' overwrite into table tb_book partition(category='janp');
+load data local inpath '/usr/local/src/hive/en.txt' overwrite into table tb_book partition(category='england');
+
+ select * from tb_book
+    > ;
+OK
+1       西游记  china
+2       水浒传  china
+3       三国演义        china
+4       红楼梦  china
+1       xiyouji england
+2       shuihuzhuan     england
+3       sanguo  england
+4       hongloumeng     england
+1       一休    janp
+2       圣斗士  janp
+3       灌篮高手        janp
+4       犬夜叉  janp
+
+
+create table tb_book2(id string, name string)
+PARTITIONED BY (category string,gender string)
+row format delimited fields terminated by '\t';
+
+
+load data local inpath '/usr/local/src/hive/zh-male.txt' overwrite into table tb_book2 partition(category='zh',gender='male');
+load data local inpath '/usr/local/src/hive/jp-male.txt' overwrite into table tb_book2 partition(category='jp',gender='male');
+load data local inpath '/usr/local/src/hive/jp-fmale.txt' overwrite into table tb_book2 partition(category='jp',gender='fmale');
+load data local inpath '/usr/local/src/hive/en-fmale.txt' overwrite into table tb_book2 partition(category='en',gender='fmale');
+load data local inpath '/usr/local/src/hive/en-male.txt' overwrite into table tb_book2 partition(category='en',gender='male');
+
+hive> select * from tb_book2;
+OK
+2       pride and prejudice     en      fmale
+3       sense and sensibility   en      fmale
+1       the greate gatesby      en      male
+4       犬夜叉  jp      fmale
+1       一休    jp      male
+2       圣斗士  jp      male
+1       西游记  zh      male
+2       水浒传  zh      male
+3       三国演义        zh      male
+4       红楼梦  zh      male
+
+建了两个字段，只会读取文件的前两列
+
+创建分桶表：
+
+create table tb_teacher(id int,name string) clustered by (id) into 4 buckets row format delimited fields terminated by ',';
+set hive.enforce.bucketing = true;强制分桶。
+分桶表数据不能直接导入：
+
+不能导入
+先建立临时表：
+
+create table tb_teacher_temp(id int,name string) row format delimited fields terminated by ',';
+
+load data local inpath '/usr/local/src/hive/teacher.txt' overwrite into table tb_teacher_temp;
+
+再插入：insert overwrite table tb_teacher select * from tb_teacher_temp;
+
+查询：select * from tb_teacher tablesample(bucket 1 out of 4 on id);
+
+注：tablesample是抽样语句，语法：TABLESAMPLE(BUCKET x OUT OF y) 。
+
+y必须是table总bucket数的倍数或者因子。hive根据y的大小，决定抽样的比例。例如，table总共分了4份，当y=2时，抽取(4/2=)2个bucket的数据，当y=8时，抽取(4/8=)1/2个bucket的数据。
+
+x表示从哪个bucket开始抽取，如果需要取多个分区，以后的分区号为当前分区号加上y。例如，table总bucket数为4，tablesample(bucket 1 out of 2)，表示总共抽取（4/2=）2个bucket的数据，抽取第1(x)个和第3(x+y)个bucket的数据。
+
+注意：x的值必须小于等于y的值，否则会经常报：FAILED: SemanticException [Error 10061]: Numerator should not be bigger than denominator in sample clause for table stu_buck，这是原因是x的值大于了y的值
+
+
+
+
+

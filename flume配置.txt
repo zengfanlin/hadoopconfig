@@ -1,0 +1,97 @@
+flume（apatch日志收集框架）配置：
+
+环境变量:
+
+export FLUME_HOME=/usr/local/src/flume/apache-flume-1.9.0-bin
+export PATH=$PATH:$FLUME_HOME/bin
+
+
+几个source组件：
+	avro:
+
+	a1.sources = r1
+	a1.sinks = k1
+	a1.channels = c1
+
+	# For each one of the sources, the type is defined
+	a1.sources.r1.type = avro
+	a1.sources.r1.bind = 0.0.0.0
+	a1.sources.r1.port = 22222
+
+	# Each sink's type must be defined
+	a1.sinks.k1.type = logger
+
+	a1.channels.c1.type = memory
+	a1.channels.c1.capacity = 1000
+	a1.channels.c1.transactionCapacity  = 100
+
+	a1.sources.r1.channels = c1
+	a1.sinks.k1.channel = c1
+
+
+	启动：
+
+	[root@hadoop01 conf]# ../bin/flume-ng agent -c ./ -f ./flume-avro.properties -n a1 -Dflume.root.logger=INFO,console
+
+	测试：./flume-ng avro-client -c ../conf -H 0.0.0.0 -p 22222 -F ../../log.txt
+
+	[root@hadoop01 bin]# ./flume-ng avro-client -c ../conf -H 0.0.0.0 -p 22222 -F ../../log.txt
+
+	文件是上上一层的log.txt
+
+	Event: { headers:{} body: 68 69 20 66 6C 75 6D 65                         hi flume }
+
+	dir:
+	a1.sources.r1.type = spooldir
+	a1.sources.r1.spoolDir = /usr/local/src/flume/data
+
+	启动:
+	../bin/flume-ng agent -c ./ -f ./flume-dir.properties -n a1 -Dflume.root.logger=INFO,console
+
+	http:
+
+	a1.sources.r1.type = http
+	a1.sources.r1.bind = 0.0.0.0
+	a1.sources.r1.port = 22222
+
+	../bin/flume-ng agent -c ./ -f ./flume-http.properties -n a1 -Dflume.root.logger=INFO,console
+
+	测试：
+	curl -X POST -d'[{"headers":{"h1":"v1","h2":"v2"},"body":"hello body hello bodyhello bodyhello body"}]'  http://0.0.0.0:22222
+
+sink：
+
+先拷贝到其他机器
+
+scp -r flume root@hadoop02:/usr/local/src/
+scp -r flume root@hadoop03:/usr/local/src/
+
+修改各自配置
+
+从后往前启动：
+../bin/flume-ng agent -c ./ -f ./flume-avro-sink.properties -n a1 -Dflume.root.logger=INFO,console
+
+
+
+hdfs sink：
+
+配置：
+a1.sinks.k1.type = hdfs
+a1.sinks.k1.hdfs.path = hdfs:hadoop01:9000/flume/data
+
+拷贝jar包
+ cd /usr/local/src/hadoop/hadoop-2.7.7/share/hadoop/common/
+ 
+ cp *.jar /usr/local/src/flume/apache-flume-1.9.0-bin/lib
+ 
+ cd /usr/local/src/hadoop/hadoop-2.7.7/share/hadoop/hdfs/
+ 
+ cp hadoop-hdfs-2.7.7.jar /usr/local/src/flume/apache-flume-1.9.0-bin/lib
+ 
+ 启动：
+../bin/flume-ng agent -c ./ -f ./flume-hdfs.properties -n a1 -Dflume.root.logger=INFO,console
+
+curl -X POST -d'[{"headers":{"h1":"v1","h2":"v2"},"body":"hello hdfs"}]'  http://0.0.0.0:22222
+结果：
+ Renaming hdfs://hadoop01:9000/flume/data/FlumeData.1551541829258.tmp to hdfs://hadoop01:9000/flume/data/FlumeData.1551541829258
+ 默认切块：128m

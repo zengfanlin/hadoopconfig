@@ -1,0 +1,2 @@
+flume到hdfs:
+../bin/flume-ng agent -c ./ -f ./flume-jt.properties -n a1 -Dflume.root.logger=INFO,console

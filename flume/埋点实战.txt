@@ -1,0 +1,26 @@
+埋点实战：
+../bin/flume-ng agent -c ./ -f ./flume-jtd.properties -n a1 -Dflume.root.logger=INFO,console
+
+[root@hadoop01 conf]# ../bin/flume-ng agent -c ./ -f ./flume-jtd.properties -n a1 -Dflume.root.logger=INFO,console
+
+
+//        domain=localhost
+//    	url=http://localhost:8080/index
+//    	title=埋点测试页面
+//    	referrer=
+//    	sh=864
+//    	sw=1536
+//    	cd=24
+//    	lang=zh-CN
+//    	userAgent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36
+//    	systemName=localhost:8080
+//    	account=web-uuid
+
+create external table flux (domain string,url string,title string,referrer string,sh string,sw string,cd string,lang string,uagent string,systemname string,account string)  partitioned by (reportTime string) row format delimited fields terminated by '|' location '/flux';
+按照partitioned by (reportTime string) 创建分区
+增加分区信息：
+alter table flux add partition (reportTime='2019-03-09') location '/flux/reportTime=2019-03-09';
+删除hdfs分区：
+ ./hdfs dfs -rm -r  /flux
+删除hive分区：
+alter table flux drop partition (reportTime='2019-03-09') ;

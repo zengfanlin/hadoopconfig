@@ -1,0 +1,27 @@
+kafka（MQ框架，配合storm进行实时数据分析）:
+cd /usr/local/src/kafka/kafka_2.10-0.10.1.1/
+[root@hadoop01 kafka_2.10-0.10.1.1]# bin/kafka-server-start.sh config/server.properties
+创建一个主题：
+./kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic flux
+
+
+查看指定topic信息
+bin/kafka-topics.sh --zookeeper node01:2181 --describe --topic t_cdr
+
+控制台向topic生产数据
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic t_cdr
+
+控制台消费topic的数据
+bin/kafka-console-consumer.sh  --zookeeper localhost:2181  --topic t_cdr --from-beginning
+发送一个消息：
+./kafka-console-producer.sh --broker-list localhost:9092 --topic flux
+消费：
+./kafka-console-consumer.sh  --zookeeper localhost:2181  --topic flux --from-beginning
+
+配置flume连接kafka:
+启动flume
+../bin/flume-ng agent -c ./ -f ./flume-jtka.properties -n a1 -Dflume.root.logger=INFO,console
+发送日志：
+启动flume，kafka消费者
+
+
