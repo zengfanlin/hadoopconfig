@@ -23,3 +23,9 @@ ZONE=public
 
 [root@localhost ~]# cp --help
 /-i 查找-i的字符
+
+
+rpm -ivh httpxxx
+
+rpm -qa|grep jdk
+ yum list|grep jdk
