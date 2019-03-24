@@ -1,0 +1,199 @@
+配置hadoop
+cd /usr/local/src/hadoop/hadoop-2.7.7/sbin/
+
+
+vi /etc/hosts
+192.168.32.129   hadoop01
+192.168.32.130   hadoop02
+192.168.32.131   hadoop03
+
+配置主机名称：
+hostname hadoop01
+配置ssh免登陆执行：
+ssh-keygen
+复制key:
+ssh-copy-id -i .ssh/id_rsa.pub root@hadoop02
+
+安装java
+
+/usr/local/src/java/  ]# tar -xvf jdk-8u181-linux-x64.tar.gz
+
+/usr/local/src/java/jdk1.8.0_181
+
+export JAVA_HOME=/usr/local/src/java/jdk1.8.0_181
+export JRE_HOME=${JAVA_HOME}/jre
+export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
+export PATH=${JAVA_HOME}/bin:$PATH
+
+
+source /etc/profile
+
+关闭防火墙：
+启动一个服务：systemctl start firewalld.service
+关闭一个服务：systemctl stop firewalld.service
+重启一个服务：systemctl restart firewalld.service
+显示一个服务的状态：systemctl status firewalld.service
+在开机时启用一个服务：systemctl enable firewalld.service
+在开机时禁用一个服务：systemctl disable firewalld.service
+查看服务是否开机启动：systemctl is-enabled firewalld.service
+查看已启动的服务列表：systemctl list-unit-files|grep enabled
+查看启动失败的服务列表：systemctl --failed
+
+安装zk：
+zk]# tar -xvf zookeeper-3.4.13.tar.gz
+建立data、log文件夹
+ data]# vi myid
+ 1
+ vi  /etc/profile
+export ZOOKEEPER_HOME=/usr/local/src/zk/zookeeper-3.4.13
+export PATH=${JAVA_HOME}/bin:$PATH:$ZOOKEEPER_HOME/bin:$ZOOKEEPER_HOME/conf
+
+拷贝密钥
+
+
+启动zk：
+cd /usr/local/src/zk/zookeeper-3.4.13/bin/
+[root@hadoop01 bin]# ./zkServer.sh start
+zkServer.sh start来启动。
+
+zkServer.sh restart　　(重启)
+zkServer.sh status　　(查看状态)
+zkServer.sh stop　　(关闭)
+zkServer.sh start-foreground　　(以打印日志方式启动)
+
+验证进程：
+[root@hadoop01 bin]# jps
+1153 QuorumPeerMain
+1178 Jps
+集群状态：
+./zkServer.sh status
+登录：
+./zkCli.sh -server hadoop01:2181
+
+Hadoop
+
+上传：src/hadoop
+tar -xvf hadoop-2.7.7.tar.gz
+
+配置6个文件：
+1：hadoop-env.sh
+export JAVA_HOME=/usr/local/src/java/jdk1.8.0_181
+export HADOOP_CONF_DIR=/usr/local/src/hadoop/hadoop-2.7.7/etc/hadoop
+
+2:core-site.xml
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://192.168.32.129:9000</value>
+  </property>
+  <!-- 指定hadoop运行时产生文件的存储路径 -->
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/usr/local/src/hadoop/hadoop-2.7.7/tmp/</value>
+  </property>
+  <property>
+    <name>ha.zookeeper.quorum</name>
+    <value>hadoop01:2181,hadoop02:2181,hadoop03:2181</value>
+  </property>
+</configuration>
+
+03:hdfs-site.xml
+
+<configuration>
+  <property>
+    <name>dfs.replication</name>
+    <value>1</value>
+  </property>
+  <property>
+    <name>dfs.namenode.rpc-address</name>
+    <value>hadoop01:9000</value>
+  </property>
+   <property>
+    <name>dfs.permissions</name>
+    <value>false</value>
+  </property>
+</configuration>
+
+04:mapred-site.xml
+<configuration>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+ 
+</configuration>
+
+05:yarn-site.xml
+
+<configuration>
+
+  <!-- Site specific YARN configuration properties -->
+  <property>
+    <name>yarn.resourcemanager.hostname</name>
+    <value>hadoop01</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+  </property>
+</configuration>
+
+06:slaves
+hadoop01
+
+
+07:配置环境变量
+vi /etc/profile
+export HADOOP_HOME=/usr/local/src/hadoop/hadoop-2.7.7
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+
+source /etc/profile
+
+
+启动hadoop
+
+1、格式化hadoop，进入目录：/usr/local/src/hadoop/hadoop-2.7.7，执行下列之一命令即可
+
+hdfs namenode -format
+
+2、启动hdfs和yarn
+
+[root@hadoop01 bin]# cd /usr/local/src/hadoop/hadoop-2.7.7
+
+先启动HDFS
+sbin/start-dfs.sh
+
+再启动YARN
+sbin/start-yarn.sh
+
+验证是否成功，使用命令：jps，输出如下即表示配置成功。
+
+
+12272 Jps
+4135 JobTracker
+9500 SecondaryNameNode
+9943 NodeManager
+9664 ResourceManager
+8898 NameNode
+9174 DataNode
+创建一个文件夹试试：
+
+[root@hadoop01 bin]# hdfs dfs -ls /
+[root@hadoop01 bin]# hdfs dfs -mkdir /user
+[root@hadoop01 bin]# hdfs dfs -ls /
+Found 1 items
+drwxr-xr-x   - root supergroup          0 2019-03-01 23:48 /user
+
+传一个文件试试：
+[root@hadoop01 bin]# hdfs dfs -put /root/anaconda-ks.cfg /user
+[root@hadoop01 bin]# hdfs dfs -ls /user
+Found 1 items
+-rw-r--r--   1 root supergroup       1231 2019-03-01 23:53 /user/anaconda-ks.cfg
+
+删除命令：
+hdfs dfs rm -r /park/result
+
+如果非法关机：删除tmp目录，重新格式化才行
+
+
