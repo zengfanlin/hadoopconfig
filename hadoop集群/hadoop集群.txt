@@ -1,0 +1,112 @@
+hadoop集群搭建：
+改名：
+hostname hadoop10
+
+vi /etc/hosts
+192.168.32.150 hadoop10
+192.168.32.151 hadoop11
+192.168.32.152 hadoop12
+192.168.32.153 hadoop13
+192.168.32.154 hadoop14
+192.168.32.155 hadoop15
+
+
+source /etc/hosts
+
+source /etc/profile
+
+scp /etc/hosts root@hadoop15:/etc/
+
+免密登陆：
+ssh-keygen
+相互复制：
+ssh-copy-id -i .ssh/id_rsa.pub root@hadoop10
+
+ZK：
+dataDir=/usr/local/src/zk/zookeeper-3.4.13/data
+dataLogDir=/usr/local/src/zk/zookeeper-3.4.13/log
+
+server.1=hadoop10:2888:3888
+server.2=hadoop11:2888:3888
+server.3=hadoop12:2888:3888
+
+配置好zookeeper-3.4.13/data/myid
+
+
+启动zk（三台就可以）：
+cd /usr/local/src/zk/zookeeper-3.4.13/bin/
+[root@hadoop01 bin]# ./zkServer.sh start
+
+./zkServer.sh status　　(查看状态)
+./zkServer.sh stop　　(关闭)
+./zkServer.sh start-foreground　　(以打印日志方式启动)
+zkServer.sh start来启动。
+./zkServer.sh status
+
+配置hadoop文件
+
+配置hadoop环境变量
+
+vi /etc/profile
+export HADOOP_HOME=/usr/local/src/hadoop/hadoop-2.7.7
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+
+source /etc/profile
+
+
+打包复制到其他机器：
+[root@hadoop10 hadoop]# tar -zcvf hadoop-2.7.7.tar.gz hadoop-2.7.7/
+
+解压
+
+启动zk后
+
+leader节点格式化zk,在zk集群上生成ha节点：
+hdfs zkfc -formatZK
+
+在hadoop03/04/05节点执行：
+cd /usr/local/src/hadoop/hadoop-2.7.7/sbin/
+
+ sh hadoop-daemon.sh start journalnode
+ 
+ 在hadoop10节点上格式化namenode：
+hadoop namenode -format
+
+提示：
+
+common.Storage: Storage directory /usr/local/src/hadoop/hadoop-2.7.7/tmp/namenode has been successfully formatted.
+19/03/28 20:16:43 INFO namenode.FSImageFormatProtobuf: Saving image file /usr/local/src/hadoop/hadoop-2.7.7/tmp/namenode/current/fsimage.ckpt_0000000000000000000 using no compression
+19/03/28 20:16:43 INFO namenode.FSImageFormatProtobuf: Image file /usr/local/src/hadoop/hadoop-2.7.7/tmp/namenode/current/fsimage.ckpt_0000000000000000000 of size 321 bytes saved in 0 seconds.
+19/03/28 20:16:43 INFO namenode.NNStorageRetentionManager: Going to retain 1 images with txid >= 0
+19/03/28 20:16:43 INFO util.ExitUtil: Exiting with status 0
+19/03/28 20:16:43 INFO namenode.NameNode: SHUTDOWN_MSG:
+/************************************************************
+SHUTDOWN_MSG: Shutting down NameNode at hadoop10/192.168.32.150
+************************************************************/
+
+启动namenode：
+hadoop-daemon.sh start namenode
+
+在hadoop11节点上执行格式化为热备节点：
+hdfs namenode -bootstrapStandby
+启动这个节点：
+hadoop-daemon.sh start namenode
+
+启动datanode:
+在hadoop03/04/05节点执行： 
+hadoop-daemon.sh start datanode
+
+在第一个第二个节点上启动热备份：
+hadoop-daemon.sh start zkfc
+
+进程为：DFSZKFailoverController
+
+在第一个节点上启动resourcemanager：
+ start-yarn.sh
+ 
+在hadoop12节点上启动备用的resourcemanager:
+ yarn-daemon.sh start resourcemanager
+ 
+ 
+ scp slaves root@hadoop15:/usr/local/src/hadoop/hadoop-2.7.7/etc/hadoop/

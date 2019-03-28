@@ -38,6 +38,8 @@ source /etc/profile
 查看服务是否开机启动：systemctl is-enabled firewalld.service
 查看已启动的服务列表：systemctl list-unit-files|grep enabled
 查看启动失败的服务列表：systemctl --failed
+firewall-cmd --state
+
 
 安装zk：
 zk]# tar -xvf zookeeper-3.4.13.tar.gz
@@ -57,9 +59,9 @@ cd /usr/local/src/zk/zookeeper-3.4.13/bin/
 zkServer.sh start来启动。
 
 zkServer.sh restart　　(重启)
-zkServer.sh status　　(查看状态)
-zkServer.sh stop　　(关闭)
-zkServer.sh start-foreground　　(以打印日志方式启动)
+./zkServer.sh status　　(查看状态)
+./zkServer.sh stop　　(关闭)
+./zkServer.sh start-foreground　　(以打印日志方式启动)
 
 验证进程：
 [root@hadoop01 bin]# jps

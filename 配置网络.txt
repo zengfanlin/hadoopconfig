@@ -4,7 +4,7 @@ firewall-cmd --zone=public --add-port=9200/tcp --permanent
 firewall-cmd --zone=public --add-port=9300/tcp --permanent
 
 配置网络：
-/etc/sysconfig/network-scripts/
+cd /etc/sysconfig/network-scripts/
 vi ifcfg-ens33
 
 
