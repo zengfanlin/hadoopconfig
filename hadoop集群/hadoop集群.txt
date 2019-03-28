@@ -97,7 +97,7 @@ hadoop-daemon.sh start namenode
 在hadoop03/04/05节点执行： 
 hadoop-daemon.sh start datanode
 
-在第一个第二个节点上启动热备份：
+在第hadoop10/11节点上启动热备份：
 hadoop-daemon.sh start zkfc
 
 进程为：DFSZKFailoverController
