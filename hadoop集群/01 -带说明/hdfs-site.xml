@@ -17,6 +17,7 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
+  <!-- 执行hdf的nameservice,和core.site中保持一致 -->
   <property>
     <name>dfs.nameservices</name>
     <value>ns</value>
@@ -25,6 +26,7 @@
     <name>dfs.ha.namenodes.ns</name>
     <value>nn1,nn2</value>
   </property>
+
   <property>
     <name>dfs.namenode.rpc-address.ns.nn1</name>
     <value>hadoop10:9000</value>
@@ -33,6 +35,7 @@
     <name>dfs.namenode.http-address.ns.nn1</name>
     <value>hadoop10:50070</value>
   </property>
+
   <property>
     <name>dfs.namenode.rpc-address.ns.nn2</name>
     <value>hadoop11:9000</value>
@@ -41,34 +44,43 @@
     <name>dfs.namenode.http-address.ns.nn2</name>
     <value>hadoop11:50070</value>
   </property>
+  <!-- 指定namenode的元数据在journalnode上的存放位置这样，
+  namenode2可以从jn集群获取最新的namenode信息，达到热备的 效果 -->
   <property>
     <name>dfs.namenode.shared.edits.dir</name>
     <value>qjournal://hadoop13:8485;hadoop14:8485;hadoop15:8485/ns</value>
   </property>
+  <!-- 指定jn存放数据的位置 -->
   <property>
     <name>dfs.journalnode.edits.dir</name>
     <value>/usr/local/src/hadoop/hadoop-2.7.7/journal</value>
   </property>
+  <!-- 开启namenode故障自动切换 -->
   <property>
     <name>dfs.ha.automatic-failover.enabled</name>
     <value>true</value>
   </property>
+  <!-- 切换的实现方式 -->
   <property>
     <name>dfs.client.failover.proxy.provider.ns</name>
     <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
   </property>
+  <!-- 隔离机制 -->
   <property>
     <name>dfs.ha.fencing.methods</name>
     <value>sshfence</value>
   </property>
+  <!-- 配置隔离机制的ssh登录密钥所在的位置 -->
   <property>
     <name>dfs.ha.fencing.ssh.private-key-files</name>
     <value>/root/.ssh/id_rsa</value>
   </property>
+  <!-- 配置namenode数据存放的位置可以不配置 -->
   <property>
     <name>dfs.namenode.name.dir</name>
     <value>file:///usr/local/src/hadoop/hadoop-2.7.7/tmp/namenode</value>
   </property>
+  <!-- 配置datanode数据存放的位置可以不配置 -->
   <property>
     <name>dfs.datanode.data.dir</name>
     <value>file:///usr/local/src/hadoop/hadoop-2.7.7/tmp/datanode</value>

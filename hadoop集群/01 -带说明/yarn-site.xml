@@ -31,10 +31,12 @@
     <name>yarn.resourcemanager.hostname.rm2</name>
     <value>hadoop12</value>
   </property>
+  <!-- 开启yarn恢复机制 -->
   <property>
     <name>yarn.resourcemanager.recovery.enabled</name>
     <value>true</value>
   </property>
+  <!-- 执行rm恢复机制类 -->
    <property>
     <name>yarn.resourcemanager.store.class</name>
     <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value>

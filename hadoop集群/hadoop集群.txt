@@ -65,12 +65,12 @@ source /etc/profile
 leader节点格式化zk,在zk集群上生成ha节点：
 hdfs zkfc -formatZK
 
-在hadoop03/04/05节点执行：
+在hadoop13/14/15节点执行：
 cd /usr/local/src/hadoop/hadoop-2.7.7/sbin/
 
- sh hadoop-daemon.sh start journalnode
+sh hadoop-daemon.sh start journalnode
  
- 在hadoop10节点上格式化namenode：
+在hadoop10节点上格式化namenode：
 hadoop namenode -format
 
 提示：
@@ -106,7 +106,16 @@ hadoop-daemon.sh start zkfc
  start-yarn.sh
  
 在hadoop12节点上启动备用的resourcemanager:
- yarn-daemon.sh start resourcemanager
+yarn-daemon.sh start resourcemanager
+如果启动找不到节点，更新slaves
  
  
- scp slaves root@hadoop15:/usr/local/src/hadoop/hadoop-2.7.7/etc/hadoop/
+打开：
+http://hadoop10:50070/dfshealth.html#tab-overview
+有一个是active一个是standby
+停掉一个试试：
+yarn管理地址：
+http://hadoop10:8088/cluster
+关掉：
+yarn-daemon.sh stop resourcemanageer
+hadoop12上的会启动
