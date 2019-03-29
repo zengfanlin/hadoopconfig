@@ -59,7 +59,7 @@ export PATH=$PATH:$FLUME_HOME/bin
 	测试：
 	curl -X POST -d'[{"headers":{"h1":"v1","h2":"v2"},"body":"hello body hello bodyhello bodyhello body"}]'  http://0.0.0.0:22222
 
-sink：
+sink：需要配合conf/log4j配置
 
 先拷贝到其他机器
 
