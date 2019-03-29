@@ -114,8 +114,10 @@ yarn-daemon.sh start resourcemanager
 http://hadoop10:50070/dfshealth.html#tab-overview
 有一个是active一个是standby
 停掉一个试试：
+hadoop-daemon.sh stop namenode
+
 yarn管理地址：
 http://hadoop10:8088/cluster
 关掉：
-yarn-daemon.sh stop resourcemanageer
+yarn-daemon.sh stop resourcemanager
 hadoop12上的会启动
