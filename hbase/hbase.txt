@@ -1,0 +1,114 @@
+hbase:
+
+配置示例：
+先配置env里面的javahome
+再配置：
+<configuration>
+    <property>
+        <name>hbase.rootdir</name>
+        <value>hdfs://hadoop01:9000/hbase</value>
+    </property>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+</configuration>
+
+
+启动：
+./start-hbase.sh
+
+完全分布式：
+
+#修改JAVA_HOME
+export JAVA_HOME=xxxx
+#修改Zookeeper和Hbase的协调模式，hbase默认使用自带的zookeeper，如果需要使用外
+部zookeeper，需要先关闭。
+
+export HBASE_MANAGES_ZK=false
+
+<configuration>
+    <property>
+        <name>hbase.cluster.distributed</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>hbase.zookeeper.quorum</name>
+        <value>hadoop01:2181,hadoop02:2181,hadoop03:2181</value>
+    </property>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+</configuration>
+
+实现步骤
+1.准备三台虚拟机，01作为主节点，02、03作为从节点。（把每台虚拟机防火墙都关掉，配
+置免密码登录，配置每台的主机名和hosts文件。）
+2.01节点上安装和配置：Hadoop+Hbase+JDK+Zookeeper
+3.02、03节点上安装和配置：Hbase+JDK+Zookeeper
+4.修改conf/hbase-env.sh
+配置示例：
+#修改JAVA_HOME
+export JAVA_HOME=xxxx
+#修改Zookeeper和Hbase的协调模式，hbase默认使用自带的zookeeper，如果需要使用外
+部zookeeper，需要先关闭。
+export HBASE_MANAGES_ZK=false
+5.修改hbase-site.xml，配置开启完全分布式模式
+配置示例：
+<name>hbase.rootdir</name>
+<value>hdfs://hadoop01:9000/hbase</value>
+<property>
+</property>
+<name>hbase.cluster.distributed</name>
+<value>true</value>
+<property>
+</property>
+#配置Zookeeper的连接地址与端口号
+<name>hbase.zookeeper.quorum</name>
+<value>hadoop01:2181,hadoop02:2181,hadoop03:2181</value>
+<property>
+</property>
+6.配置region服务器,修改conf/regionservers文件,每个主机名独占一行，hbase启动或关闭
+时会按照该配置顺序启动或关闭主机中的hbase
+配置示例：
+hadoop01
+hadoop02
+hadoop03
+HBASE完全分布式安装
+2016年1月25日
+9:41
+分区 hbase0
+9:41
+分区 hbase01 的第 15 页
+7.将01节点配置好的hbase通过远程复制拷贝到02,03节点上
+8.启动01,02,03的Zookeeper服务
+9.启动01节点的Hadoop
+10.启动01节点的Hbase，进入到hbase安装目录下的bin目录
+执行：sh start-hbase.sh
+11.查看各节点的java进程是否正确
+12.通过浏览器访问http://xxxxx:60010来访问web界面，通过web见面管理hbase
+13.关闭Hmaster,进入到hbase安装目录下的bin目录
+执行：stop-hbase.sh
+14.关闭regionserver，进入到hbase安装目录下的bin目录
+执行：sh hbase-daemon.sh stop regionserver
+注：HBASE配置文件说明
+hbase-env.sh配置HBase启动时需要的相关环境变量
+hbase-site.xml配置HBase基本配置信息
+HBASE启动时默认使用hbase-default.xml中的配置，如果需要可以修改hbase-site.xml文
+件，此文件中的配置将会覆盖hbase-default.xml中的配置
+修改配置后要重启hbase才会起作用
+
+创建表：
+create_namespace 'ns1'
+创建表：加上列族
+ create 'ns1:tab3', 'cf1' 
+ 
+插入数据：  put 'ns1:tab3', 'rk1', 'cf1:c1', 'v111'
+
+scan 'ns1:tab3'
+put 'ns1:tab3', 'rk1', 'cf1:c2', 'v22222'
+
+get 'ns1:tab3' ,'rk1','cf1:c2'
+get 'ns1:tab3' , 'rk1'

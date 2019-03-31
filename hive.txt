@@ -37,6 +37,13 @@ load data  local inpath '/usr/local/src/hive/user.txt' into table tb_user2;
 
 
 mysql存储元数据：
+安装好mysql之后，配置conf/hive-site.xml指定到mysq数据库
+同时将mysq-connnect包放到/usr/local/src/hive/apache-hive-1.2.2-bin/lib/
+mysql 编码集为latin1：
+drop hive 把默认创建的数据库删除
+再插入：create database hive charset latin1;
+
+
 COLUMNS_V2
 SDS
 DBS
@@ -46,7 +53,7 @@ TBLS
 
 未被external修饰的是内部表（managed table），被external修饰的为外部表（external table）； 
 区别： 
-内部表数据由Hive自身管理，外部表数据由HDFS管理； 
+内部表数据由Hive自身管理(hive先创建的表，再有数据)，外部表数据由HDFS管理（先有的数据，再有的表做连接）； 
 内部表数据存储的位置是hive.metastore.warehouse.dir（默认：/user/hive/warehouse），外部表数据的存储位置由自己制定； 
 删除内部表会直接删除元数据（metadata）及存储数据；删除外部表仅仅会删除元数据，HDFS上的文件并不会被删除； 
 对内部表的修改会将修改直接同步给元数据，而对外部表的表结构和分区进行修改，则需要修复（MSCK REPAIR TABLE table_name;）
@@ -56,7 +63,7 @@ cd /usr/local/src/hadoop/hadoop-2.7.7/bin/
 [root@hadoop01 bin]# ./hdfs dfs -mkdir /data
 [root@hadoop01 bin]# ./hdfs dfs -mkdir /data
 [root@hadoop01 bin]# ./hdfs dfs -put /usr/local/src/hive/book.txt /data
-创建：
+外部表创建（连接到data数据文件夹）：
 create external table ext_book(
     id      int
    ,name    string
@@ -75,7 +82,7 @@ OK
 3       三国演义
 4       红楼梦
 
-创建分区表：
+创建分区表 分区表会在表的下面按照分区信息创建多个文件夹，好处：按分区信息查询时速度快：
 
 create table tb_book(id string, name string)
 PARTITIONED BY (category string)
@@ -129,6 +136,15 @@ OK
 
 建了两个字段，只会读取文件的前两列
 
+
+
+也可以直接创建文件夹后上传数据（hadoop插件），然后：
+alter table add partition(category='us') location hadoop目录
+删除分区
+alter table drop partition(category='us');
+
+
+
 创建分桶表：
 
 create table tb_teacher(id int,name string) clustered by (id) into 4 buckets row format delimited fields terminated by ',';
@@ -146,7 +162,7 @@ load data local inpath '/usr/local/src/hive/teacher.txt' overwrite into table tb
 
 查询：select * from tb_teacher tablesample(bucket 1 out of 4 on id);
 
-注：tablesample是抽样语句，语法：TABLESAMPLE(BUCKET x OUT OF y) 。
+注：tablesample是抽样语句，语法：TABLESAMPLE(BUCKET x OUT OF y) （4取1，也可以8取1，不过会分的更细）
 
 y必须是table总bucket数的倍数或者因子。hive根据y的大小，决定抽样的比例。例如，table总共分了4份，当y=2时，抽取(4/2=)2个bucket的数据，当y=8时，抽取(4/8=)1/2个bucket的数据。
 
@@ -154,7 +170,32 @@ x表示从哪个bucket开始抽取，如果需要取多个分区，以后的分�
 
 注意：x的值必须小于等于y的值，否则会经常报：FAILED: SemanticException [Error 10061]: Numerator should not be bigger than denominator in sample clause for table stu_buck，这是原因是x的值大于了y的值
 
+HIVE的UDF：
 
+写一个自定义的功能函数：
+package com.tedu;
+
+import org.apache.hadoop.hive.ql.exec.UDF;
+
+public class myudf extends UDF {
+	public String evaluate(String s) {
+		return s.toUpperCase();
+	}
+}
+
+导出jar上传到系统中
+
+create temporary function myudf as 'com.tedu.myudf';
+
+select myudf('sdflsdkSSSS')
+
+开启hive server 服务
+
+./hive --service hiveserver2 &
+
+2.创建本地工程，导入jar包
+导入hive\lib目录下的hive-jdbc-1.2.0-standalone.jar
+导入hadoop-2.7.1\share\hadoop\common下的hadoop-common-2.7.1.jar
 
 
 
