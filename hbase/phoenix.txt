@@ -1,0 +1,16 @@
+phoenix：
+
+拷贝phoenix-4.14.1-HBase-1.4-server.jar
+phoenix-4.14.1-HBase-1.4-client.jar
+到hbase的lib下面
+
+配置hbase的环境变量：
+vi /etc/profile
+
+export HBASE_HOME=/usr/local/src/hbase/hbase-1.4.9
+export PATH=$PATH:$HBASE_HOME/bin
+
+source /etc/profile
+
+启动：
+[root@hadoop01 apache-phoenix-4.14.1-HBase-1.4-bin]# bin/sqlline.py

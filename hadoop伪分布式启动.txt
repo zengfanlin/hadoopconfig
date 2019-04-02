@@ -1,0 +1,20 @@
+hadoop伪分布式启动：
+
+cd /usr/local/src/zk/zookeeper-3.4.13/bin/
+./zkServer.sh start
+
+cd /usr/local/src/hadoop/hadoop-2.7.7
+
+先启动HDFS
+sbin/start-dfs.sh
+
+再启动YARN
+sbin/start-yarn.sh
+
+hbase启动：
+启动：
+
+cd /usr/local/src/hbase/hbase-1.4.9/bin/
+./start-hbase.sh
+启动shell：
+./hbase shell
