@@ -13,4 +13,22 @@ export PATH=$PATH:$HBASE_HOME/bin
 source /etc/profile
 
 启动：
-[root@hadoop01 apache-phoenix-4.14.1-HBase-1.4-bin]# bin/sqlline.py
+cd /usr/local/src/phoenix/apache-phoenix-4.14.1-HBase-1.4-bin/
+
+[root@hadoop01 apache-phoenix-4.14.1-HBase-1.4-bin]#  bin/sqlline.py
+ctrl+D退出
+
+创建表：
+create table tabx1(id integer primary key ,name varchar) ;
+自动大写
+查看表结构：
+ !describe tabx1;
+ 小写：
+ create table "tabx2"("id" integer primary key ,"name" varchar) ;
+ 
+指定列族： 
+create table "tabx3"("id" integer primary key ,"info"."name" varchar,"info"."addr" varchar) ;
+
+ upsert into  "tabx3" values(1,'zhang','beijing');
+ 
+创建视图： create view tabx3_view  as select * from "tabx3";

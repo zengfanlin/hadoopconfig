@@ -2,8 +2,7 @@ hive（离线分析）:
 启动hadoop：
  start-all.sh
  
-[root@hadoop01 hive]# cd apache-hive-1.2.2-bin
-[root@hadoop01 apache-hive-1.2.2-bin]# cd bin/
+[root@hadoop01 hive]# cd /usr/local/src/hive/apache-hive-1.2.2-bin/bin/
 [root@hadoop01 bin]# ./hive
 jsp： RunJar
 

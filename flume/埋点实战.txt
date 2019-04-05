@@ -24,3 +24,83 @@ alter table flux add partition (reportTime='2019-03-09') location '/flux/reportT
  ./hdfs dfs -rm -r  /flux
 删除hive分区：
 alter table flux drop partition (reportTime='2019-03-09') ;
+
+cd /usr/local/src/flume/apache-flume-1.9.0-bin/conf/
+
+../bin/flume-ng agent -c ./ -f ./flux.properties -n a1 -Dflume.root.logger=INFO,console
+
+数据清洗：
+http://localhost:8080/demo/b.jsp|b.jsp|页面B|utf-8|1536x864|24-bit|zh-cn|1|1||0.5303815728353791|http://localhost:8080/demo/a.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; rv:11.0) like Gecko|77784152079738552450|6557601279_0_1554477315418|0:0:0:0:0:0:0:1
+http://localhost:8080/demo/a.jsp|a.jsp|页面A|utf-8|1536x864|24-bit|zh-cn|1|1||0.4770840313296297||Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; rv:11.0) like Gecko|53283152253045653565|2758497354_0_1554477316047|0:0:0:0:0:0:0:1
+http://localhost:8080/demo/b.jsp|b.jsp|页面B|utf-8|1536x864|24-bit|zh-cn|1|1||0.18417928555396812|http://localhost:8080/demo/a.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; rv:11.0) like Gecko|50814963786904568142|1971016638_0_1554477317197|0:0:0:0:0:0:0:1
+http://localhost:8080/demo/b.jsp|b.jsp|页面B|utf-8|1536x864|24-bit|zh-cn|1|1||0.36033937535352073|http://localhost:8080/demo/a.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; rv:11.0) like Gecko|84021232063572767597|9768934357_0_1554477318501|0:0:0:0:0:0:0:1
+
+create database flux;
+use flux;
+
+创建外部分区表管理已经在HDFS的流量数据
+
+create external table flux(url string,urlname string,title string,chset string,scr string,col string,lg string,je string,ec string,fv string,cn string,ref string,uagent string,stat_uv string,stat_ss string,cip string) partitioned by (reportTime string) row format delimited fields terminated by '|' location '/flux';
+
+增加flux的分区信息
+alter table flux add partition(reportTime='2019-04-05') location '/flux/reportTime=2019-04-05';
+alter table flux drop partition(reportTime='2019-09-17');
+
+alter table flux drop partition(reportTime='2019-04-05');
+创建数据清洗表dataclear
+create table dataclear (url string,urlname string,ref string,uagent string,uvid string,ssid string,sscoutn string,sstime string,cip string) partitioned by (reportTime string) row format delimited fields terminated by '|';
+
+从flux表中导入数据到dataclear表，在这个过程中完成数据清洗
+
+insert into dataclear partition(reportTime='2019-04-05') select url,urlname,ref,uagent,stat_uv,split(stat_ss,'_')[0],split(stat_ss,'_')[1],split(stat_ss,'_')[2],cip from flux where reportTime = '2019-04-05';
+
+PV:访问量，一天之内访问的总量，有多少条日志就是多少个访问量
+select count(*) as pv from dataclear where reportTime='2019-04-05';
+
+UV:独立访客数，一天之内用户的总数，将一天内所有日志的uvid去重后计数
+select count(distinct uvid) as uv from dataclear where reportTime='2019-04-05';
+
+VVV:会话总数，一天之内会话的总的数量，将一天内所有的日志的ssid去重后计数。
+select count(distinct ssid) as vv from dataclear where reportTime='2019-04-05';
+
+BR:跳出率，一天之内跳出的会话占总的会话的比率。一天内跳出会话的总数/会话的总数。
+跳出的会话总数
+
+select count(br_tab.ssid) from (select ssid from dataclear where reportTime='2019-04-05' group by
+ssid having count(*) = 1) as br_tab;
+会话的总数就是vv
+1 select count(distinct ssid) from dataclear where reportTime='2019-04-05';
+计算跳出率
+1 select round(br_left_tab.br_count / br_right_tab.vv_count,4) as br from (select
+count(br_tab.ssid) as br_count from (select ssid from dataclear where reportTime='2019-04-05' group
+by ssid having count(*) = 1) as br_tab) as br_left_tab, (select count(distinct ssid) as vv_count
+from dataclear where reportTime='2019-04-05') as br_right_tab;
+BR
+e.
+NewIP:新增IP总数，一天之内新IP的数量。
+将一天所有日志的IP去重 后 检查在历史数据从未出现过的数量。
+1 select count(distinct dataclear.cip) as newip from dataclear where
+dataclear.reportTime='2019-04-05' and dataclear.cip not in (select distinct inner_dataclear_tab.cip
+from dataclear as inner_dataclear_tab where
+datediff('2019-04-05',inner_dataclear_tab.reportTime)>0);
+
+f.
+NewCust:新增客户总数，一天之内新用户的数量。
+将一天内所有日志的uvid去重 后 检查从未在历史数据中出现过的数量。
+1 select count(distinct dataclear.uvid) as newcust from dataclear where
+dataclear.reportTime='2019-04-05' and dataclear.uvid not in (select inner_dataclear_tab.uvid from
+dataclear as inner_dataclear_tab where datediff('2019-04-05',inner_dataclear_tab.reportTime)>0);
+
+g.
+AvgTime:平均访问时长，一天之内所有会话访问时长的平均值
+将一天内所有日志按照会话分组后，求会话内部最后一次访问的时间减去第一次访问的时间
+就是会话时长，求其平均值。
+1 select avg(avgtime_tab.use_time) as avgtime from (select max(sstime) - min(sstime) as use_time from
+dataclear where reportTime='2019-04-05' group by ssid) as avgtime_tab;
+
+h.
+AvgDeep:平均访问深度，一天内所有会话访问深度的平均值。
+将一天内所有日志按照会话分组后，统计每个会话访问的页面去重后的总数为会话的访问深
+度，再求这些会话访问深度的平均值。
+1 select round(avg(avgdeep_tab.deep),4) as avgdeep from (select count(distinct urlname) as deep from
+dataclear where reportTime='2019-04-05' group by ssid) as avgdeep_tab;
