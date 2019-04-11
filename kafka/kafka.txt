@@ -1,0 +1,73 @@
+Kafka:
+卡夫卡是一个分布式发布-订阅信息系统，按照topic分类存放消息
+生产者producter、消费者consumer、集群由多个kafka实例组成，每个实例（server）称为broker
+高吞吐量、持久化存储、分布式、易于扩展、客户端状态维护、客户端和服务端通过tcp方式通信
+topic：一个topic是对一组消息的归纳，每个topic对日志进行分区，每个分区由一系列有序的、不可变 的消息组成，这些消息被连续的追加到分区中；
+分区中每个消息都有一个连续的序列号叫做offset，用来在分区中标识这个消息唯一性；
+kafka会保留消息，不管它有没有被消费，消息策略可以设置成按时间过期释放；
+每个分区在kafka集群中的若干服务中都有副本，这样这些持有副本的服务可以共同处理数据的请求，副本的数量是可以配置的，这样kafka就有了容错能力。
+每个分区都由一个服务器作为leader，若干个服务器作为follower，leader负责消息读写，follower负责同步读取leader的消息，这样一台服务器可以作为某些分区的leader，也可以作为某些分区的followers，这样就达到了负载均衡的效果
+
+配置server.properties
+
+启动： cd /usr/local/src/kafka/kafka_2.10-0.10.1.1/bin/
+ ./kafka-server-start.sh ../config/server.properties &
+ 
+ 一 创建 Topic
+  TopicCommand.createTopic() 方法负责创建 Topic，其核心逻辑是确定新建 Topic 中有多少个分区及每个分区中的副本如何分配，既支持使用 replica-assignment 参数手动分配，也支持使用 partitions 参数和 replication-factor 参数指定分区个数和副本个数进行自动分配。之后该方法会将副本分配结果写入到 ZooKeeper 中。
+./kafka-topics.sh --create --topic test0 --zookeeper hadoop01:2181 --config max.message.bytes=12800000 --config flush.messages=1 --partitions 5 --replication-factor 1
+
+--create： 指定创建topic动作
+
+--topic：指定新建topic的名称
+
+--zookeeper： 指定kafka连接zk的连接url，该值和server.properties文件中的配置项{zookeeper.connect}一样
+
+--config：指定当前topic上有效的参数值，参数列表参考文档为: Topic-level configuration
+
+--partitions：指定当前创建的kafka分区数量，默认为1个
+
+--replication-factor：指定每个分区的复制因子个数，默认1个
+
+[root@hadoop03 bin]# ./kafka-topics.sh --create --zookeeper hadoop01:2181 --replication-factor 2 --partitions 5 --topic park
+
+查看 Topic 列表
+./kafka-topics.sh --list --zookeeper hadoop01:2181
+
+./kafka-topics.sh --describe --zookeeper hadoop01:2181 --topic park
+
+./kafka-topics.sh --describe --zookeeper localhost:2181 --topic park
+
+启动生产者以发送消息
+此过程保持与单代理设置中相同。
+./kafka-console-producer.sh --broker-list hadoop01:9092 --topic park1
+
+启动消费者以接收消息
+
+./kafka-console-consumer.sh --zookeeper localhost:2181 --topic park1 --from-beginning
+
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 3 -partitions 1 --topic park1
+
+bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic park1
+
+启动生产者以发送消息
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic park1
+启动消费者以接收消息
+bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic park1 --from-beginning
+
+删除：
+./kafka-topics.sh --zookeeper localhost:2181 --delete --topic park
+
+
+创建
+./kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 3 -partitions 1 --topic flux
+
+启动flume：
+
+cd /usr/local/src/flume/apache-flume-1.9.0-bin/conf/
+
+
+../bin/flume-ng agent -c ./ -f ./flume-weblog.properties -n a1 -Dflume.root.logger=INFO,console
+
+启动一个消费者：
+./kafka-console-consumer.sh --zookeeper localhost:2181 --topic flux --from-beginning

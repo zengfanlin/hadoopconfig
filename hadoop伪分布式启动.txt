@@ -11,7 +11,7 @@ sbin/start-dfs.sh
 再启动YARN
 sbin/start-yarn.sh
 
-hbase启动：
+hbase启动（三台机器）：
 启动：
 
 cd /usr/local/src/hbase/hbase-1.4.9/bin/

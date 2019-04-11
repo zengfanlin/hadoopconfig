@@ -1,0 +1,509 @@
+一、埋点
+	1.埋点概述
+		所谓埋点就是在应用服务器中的每一个页面中都嵌入一段js脚本 使用户在访问页面时 自动触发js 收集用户访问行为日志 并提交到日志服务器。
+	2.js脚本编写
+		pv
+			点击量 - 一次请求就是一个pv - 只需要在日志服务器中记录访问次数 就是pv的值 并不需要在js中获取额外数据
+		uv
+			独立访客数 - 一天内 独立访客的数量 - 独立访客？一个用户就是一个访客 - 如何去识别一个用户 - 在cookie中保留一个用户标识来识别这个用户 - 在日志服务器收到请求后 获取这个cookie的值 如果发现在今天的数据中没有出现过就说明是一个新的uv 如果出现过 不能算作一个新的uv - js中应该有对这个cookie的处理
+
+			尝试从浏览器中获取cookie ar_stat_uv
+			if(获取不到){
+				//这是用户第一次访问
+				生成一个新的用户的唯一标识
+				将这个唯一标识生成一个名为ar_stat_uv cookie 保存到浏览器中 并指定保存的时长10年
+				并将这个唯一标识作为未来提交给日志服务器的信息的一部分拼接到提交信息中
+			}else{
+				//这个用户不是第一次访问
+				获取这个cookie ar_stat_uv值 就是该用户的唯一标识
+				将这个唯一标识作为未来提交给日志服务器的信息的一部分拼接到提交信息中
+			}
+			
+		vv
+			独立会话数 - 一天之内产生的会话的总数 - 会话 - 如何识别会话呢 - 在浏览器内部保留一个cookie 保存会话的唯一标识 - 在服务器中获取到用户提交的日志信息后 可以通过这个唯一标识区分出 这是不是一个新的会话 以及可以区分出哪些请求其实是来自于同一个会话的 - js 代码中应该包含这样的代码 来通过设置识别cookie唯一的区分不同的会话
+
+			尝试获取cookie ar_stat_ss 获得当前会话的编号
+			if(获取不到){
+				//这是一次新的会话
+				生成一个唯一标识这个会话的编号
+				将这个 会话的编号 当前时间 当前访问页面的次数（第一次就是0） 保存到浏览器中名为ar_stat_ss cookie中 作为会话级别的cookie
+				在将这个会话编号作为未来要提交给日志服务器的信息的一部分拼接
+			}else{
+				获取cookie中的信息，包括会话编号 包括上次访问的时间 包括 访问的页面总数
+				if(当前时间 - 上次访问的时间 > 超时时间){
+					//虽然这个cookie存在但是已经超时 作废
+					重新生成一个会话编号
+					重新获取当前时间
+					重新获得页面访问总数 - 第一次就是0
+					存入cookie 作为一个新的会话的标记
+					并作为未来要提交给日志服务器的信息拼接
+				}else{
+					//存在会话相关的cookie 并且没有超时
+					获取会话编号
+					获取页面访问次数
+					获取最新时间
+					将会话编号 和 页面访问次数+1 和 最新时间 后作为未来要提交给日志服务器的信息拼接
+					更新cookie 会话编号不变 时间变为当前时间 页面访问总数变为 之前的访问总数+1
+				}
+			}
+			
+		br
+			跳出率 - 一天之内 跳出的会话总数/会话总数 得到的比率 - 会话总数:获取一天之内所有的会话编号去重 得到的数量就是今天一天之内会话的总数 - 跳出的会话总数:检查哪个会话编号对应的访问记录只有一个 这样的会话总数就是跳出的会话总数 - 而这两个信息 通过vv信息可以计算而得到 并不需要浏览器提供更多的信息
+
+		newip
+			新增ip数 - 一天之内 有多少ip是历史上从未出现过的 总数就是今天的新增ip数 - 今天的ip信息 历史的所有ip信息 - 访问的客户端的ip信息 从服务器端获取 - 历史ip 从历史数据中获取 - 不需要在js中获取额外信息
+			
+		newcust
+			新增客户数 - 一天之内 有多少uvid 是在历史中从未出现过的 - 今天所有的uvid 去重后 和历史的所有uvid做比较 检查有多少是历史上从未出现过的 - 需要uvid 而这个数据上面在计算uv的时候 已经有了 - 不需要在js中获取额外信息
+
+		avgtime
+			会话平均访问时长 - 一天之内 所有会话的访问时长的平均值 - 会话的访问时长:会话最后一个页面的访问时间 - 第一个页面的访问时间 - 会话中页面的访问时间 在计算vv时已经得到了 - 不需要js提供更多信息
+
+		avgdeep
+			会话平均访问深度 - 一天之内 所有会话访问深度的平均值 - 会话的访问深度:一个会话访问的所有页面的去重后的总数 - 每个会话中所有的请求访问的页面地址 - 需要通过js提供 访问的页面地址信息
+
+		================================================
+		http协议
+			请求
+				请求行
+				请求头
+					referer
+				实体内容
+				
+			响应
+				状态行
+				响应头
+
+				实体内容
+
+		URL编码
+			http协议 只支持iso8859-1的字符
+			那么非iso8859-1的字符 如何用http协议处理呢？ - URL编码 - 将非iso8859-1的字符 用iso8859-1的字符来表示的技术
+
+			中 --> 
+				0000 1111 0F
+				0001 1111 CD
+				0011 1111 3B
+						--> %0F%CD%3B
+					
+			国 -->
+				0101 0101 2F
+				0001 0101 66
+				0100 0101 9D
+						--> %2F%66%9D
+		================================================
+二、日志服务器应用开发
+	在日志服务器中整理日志信息 利用Log4j输出
+
+	方式1：
+		日志服务器将日志生成到文件中 
+		flume来获取文件中的日志信息
+
+		优点：
+			数据先落地一次 所以即使出现意外情况 仍然可以从文件中恢复之前的日志
+		缺点：
+			数据落地 扫描都需要时间 对实时性有一定影响
+		坑：
+			log4j需要不停写入数据 而spooldirsource 要求观察的目录 不能出现重名文件 及 文件不能被修改 存在矛盾。
+			解决办法1：
+				使用ExecSource 调用tail命令 来不停的扫描指定文件 来获取最新日志
+			解决方法2：
+				配置Log4j按照时间/大小滚动产生文件 并且配置 滚动之前和之后的文件后缀格式不同
+				而Flume使用SpoolDirSource来关注此文件夹，并且配置ignorePattern忽略正在使用的文件格式
+
+	方式2：
+		日志服务器直接通过log4j将日志发往flume Agent
+
+		优点:
+			数据直接传输 保证了较高的实时性
+		缺点:
+			没有数据落地 缺少可靠性
+		坑:
+			如何让log4j直接将日志发往flumeAgent
+			解决方案：
+				flume原生的提供Log4jAppender 可以通过log4j直接将日志信息发往Flume的AvroSource
+				例子：
+					log4j.appender.flume = org.apache.flume.clients.log4jappender.Log4jAppender
+					log4j.appender.flume.Hostname = example.com
+					log4j.appender.flume.Port = 41414
+					log4j.appender.flume.UnsafeMode = true
+
+	我们采取的方案：				
+		在日志服务器应用中 接受客户端提交的日志 通过Log4jAppender写入flume中
+		
+三、flume收集日志
+	#flume测试代码
+		#配置Agent
+		a1.sources = r1
+		a1.sinks = k1
+		a1.channels = c1
+
+		#配置source
+		a1.sources.r1.type = avro
+		a1.sources.r1.bind = 0.0.0.0
+		a1.sources.r1.port = 44444
+		a1.sources.r1.interceptors = i1
+		a1.sources.r1.interceptors.i1.type = regex_extractor
+		a1.sources.r1.interceptors.i1.regex = ^(?:[^\\|]*\\|){14}\\d+_\\d+_(\\d+)\\|.*$
+		a1.sources.r1.interceptors.i1.serializers = s1
+		a1.sources.r1.interceptors.i1.serializers.s1.name = timestamp
+
+		#配置sink
+		a1.sinks.k1.type = hdfs
+		a1.sinks.k1.hdfs.path = hdfs://hadoop01:9000/flux/reportTime=%Y-%m-%d
+		a1.sinks.k1.hdfs.fileType = DataStream
+		a1.sinks.k1.hdfs.rollInterval = 30
+		a1.sinks.k1.hdfs.rollSize = 0
+		a1.sinks.k1.hdfs.rollCount = 0
+		a1.sinks.k1.hdfs.timeZone = GMT+8
+
+		a1.sinks.k2.type = org.apache.flume.sink.kafka.KafkaSink
+		a1.sinks.k2.brokerList = hadoop01:9092,hadoop02:9092,hadoop03:9092
+		a1.sinks.k2.topic = netflow
+
+		#配置channel
+		a1.channels.c1.type = memory
+		a1.channels.c1.capacity = 1000
+		a1.channels.c1.transactionCapacity = 100
+
+		#绑定关系
+		a1.sources.r1.channels = c1
+		a1.sinks.k1.channel = c1
+
+
+	#客户端agent
+		#配置Agent
+		a1.sources = r1
+		a1.sinks = k1 k2 k3
+		a1.channels = c1
+
+		#配置source
+		a1.sources.r1.type = avro
+		a1.sources.r1.bind = 0.0.0.0
+		a1.sources.r1.port = 44444
+		a1.sources.r1.interceptors = i1
+		a1.sources.r1.interceptors.i1.type = regex_extractor
+		a1.sources.r1.interceptors.i1.regex = ^(?:[^\\|]*\\|){14}\\d+_\\d+_(\\d+)\\|.*$
+		a1.sources.r1.interceptors.i1.serializers = s1
+		a1.sources.r1.interceptors.i1.serializers.s1.name = timestamp
+
+		#配置sink
+		a1.sinks.k1.type = avro
+		a1.sinks.k1.hostname = Park01
+		a1.sinks.k1.port = 44444
+		
+		a1.sinks.k2.type = avro
+		a1.sinks.k2.hostname = Park02
+		a1.sinks.k2.port = 44444
+		
+		a1.sinks.k3.type = avro
+		a1.sinks.k3.hostname = Park03
+		a1.sinks.k3.port = 44444
+
+		a1.sinkgroups = g1
+		a1.sinkgroups.g1.sinks = k1 k2 k3
+		a1.sinkgroups.g1.processor.type = load_balance
+		a1.sinkgroups.g1.processor.backoff = true
+		a1.sinkgroups.g1.processor.selector = random
+			
+		#配置channel
+		a1.channels.c1.type = memory
+		a1.channels.c1.capacity = 1000
+		a1.channels.c1.transactionCapacity = 100
+
+		#绑定关系
+		a1.sources.r1.channels = c1
+		a1.sinks.k1.channel = c1
+		a1.sinks.k2.channel = c1
+		a1.sinks.k3.channel = c1
+
+	#中心服务器agent
+		#配置agent
+		a1.sources = r1
+		a1.sinks = k1 k2
+		a1.channels = c1 c2
+
+		#配置source
+		a1.sources.r1.type = avro
+		a1.sources.r1.bind = 0.0.0.0
+		a1.sources.r1.port = 44444
+
+		#配置sink
+		a1.sinks.k1.type = hdfs
+		a1.sinks.k1.hdfs.path = hdfs://ns/flux/reportTime=%Y-%m-%d
+		a1.sinks.k1.hdfs.fileType = DataStream
+		a1.sinks.k1.hdfs.rollInterval = 30
+		a1.sinks.k1.hdfs.rollSize = 0
+		a1.sinks.k1.hdfs.rollCount = 0
+		a1.sinks.k1.hdfs.timeZone = GMT+8
+
+		a1.sinks.k2.type = org.apache.flume.sink.kafka.KafkaSink
+		a1.sinks.k2.brokerList = Park01:9092,Park02:9092,Park03:9092
+		a1.sinks.k2.topic = netflow
+
+		#配置channel
+		a1.channels.c1.type = memory
+		a1.channels.c1.capacity = 1000
+		a1.channels.c1.transactionCapacity = 100
+		
+		a1.channels.c2.type = memory
+		a1.channels.c2.capacity = 1000
+		a1.channels.c2.transactionCapacity = 100
+
+		#绑定关系
+		a1.sources.r1.channels = c1 c2
+		a1.sinks.k1.channel = c1
+		a1.sinks.k2.channel = c2
+		
+		
+		================================
+		括号在正则表达式中的作用主要有两方面 
+			将一段正则内容作为一组 实现操作符对这一组内容起作用
+			将一段内容作为捕获组进行捕获
+
+			http://127.0.0.1/demo/b.jsp|b.jsp|页面B|UTF-8|1024x768|24-bit|zh-cn|1|1|18.0 r0|0.7864694688469172|http://127.0.0.1/demo/a.jsp|Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36|84488155274825025429|8736267587_6_1495160530159|0:0:0:0:0:0:0:1
+		================================
+
+
+四、离线数据分析
+	1.hive创建外部分区表管理数据
+		hdfs有数据了 在hive中创建外部表来关联数据 进行数据的清洗 处理
+		在hive中创建外部分区表 管理数据
+			EXTERNAL 关键字可以让用户创建一个外部表，在建表的同时指定一个指向实际数据的路径（LOCATION），Hive 创建内部表时，会将数据移动到数据仓库指向的路径；若创建外部表，仅记录数据所在的路径，不对数据的位置做任何改变。在删除表的时候，内部表的元数据和数据会被一起删除，而外部表只删除元数据，不删除数据。
+			LIKE 允许用户复制现有的表结构，但是不复制数据。	
+			有分区的表可以在创建的时候使用 PARTITIONED BY 语句。一个表可以拥有一个或者多个分区，每一个分区单独存在一个目录下。
+		#创建外部分区表关联文件夹
+		create external table flux (url string,urlname string,title string,chset string,scr string,col string,lg string,je string,ec string,fv string,cn string,ref string,uagent string,stat_uv string,stat_ss string,cip string) PARTITIONED BY (reportTime string) row format delimited fields terminated by '|' location '/flux';
+		#增加分区信息
+		alter table flux add partition (reportTime='2017-05-18') location '/flux/reportTime=2017-05-18';
+	2.数据清洗
+		在大数据分析处理数据时 往往会发现数据本身有一定的缺陷
+		包括：
+			数据格式不统一
+			字段缺失
+				丢弃数据 补充固定值 根据已有数据推测 咨询业务人员 单独提取出来处理
+			字段格式、数据范围错误
+				格式错误 调整格式 参看上面字段缺失的解决方案
+			数据需要预先经过合并排序等处理
+				按照需求处理
+				
+		需要在数据处理之前解决数据本身如上的问题 这个过程就称之为数据清洗的过程
+
+		数据清洗并没有严格工具上的限制 什么工具合适 最适合业务需求 和 公司自身的技术栈 就用什么技术。
+
+		解决如上问题有很多方案，总的来说要结合业务特点 灵活的进行方案设计。
+			
+	
+	3.flux的数据清洗
+		只保留需要的字段
+		将会话信息拆分 为 会话编号 会话页面数 会话时间
+
+		数据格式
+			url		urlname	title	chset	scr		col	lg		je			ec				fv			cn		ref		uagent		stat_uv			stat_ss			 		cip
+			访问地址	资源名 	网页标题	字符集	屏幕信息	颜色	语言环境	是否支持java	是否支持cookie	flash版本	随机数	前跳地址	用户agent	uv编号(uv_id)	vv信息(会话id_会话次数_当前时间) 客户ip(服务器端获取)
+
+		#创建清洗表
+		create table dataclear(reportTime string,url string,urlname string,ref string,uagent string,uvid string,ssid string,sscount string,sstime string,cip string)row format delimited fields terminated by '|';
+		#清洗数据
+		insert overwrite table dataclear select reportTime,url,urlname,ref,uagent,stat_uv,split(stat_ss,'_')[0],split(stat_ss,'_')[1],split(stat_ss,'_')[2],cip from flux;
+		
+	4.hive处理业务逻辑
+		pv
+			点击量 - 一次访问就是一个pv - 统计一段时间内日志的数量就是这段时间内的pv
+			select count(*) as pv from dataclear where reportTime = '2017-05-18';
+			
+		uv
+			独立访客数 - 一天之内 所有的独立访客数的总量 - 
+			select count(distinct uvid) as uv from dataclear where reportTime='2017-05-18';
+		vv
+			会话总数 - 一天之内 所有会话的总数 - 
+			select count(distinct ssid) as vv from dataclear where reportTime='2017-05-18';
+
+		br
+			跳出率 - 一天之内 跳出的会话/总的会话 得到的比率 - 跳出的会话是指 一个会话中只访问过一个页面 这样的会话称之为跳出的会话 总的会话 所有的会话总数其实就是上面的vv 
+			#所有的会话总数
+			select count(distinct ssid) as vv_count from dataclear where reportTime='2017-05-18';
+			#跳出的会话
+			select count(*) as br_count from (select ssid from dataclear where reportTime = '2017-05-18' group by ssid having count(*) = 1) as br_tab;
+			#将两个结果 想象成两张表 来进行连接 将两个字段相除得到跳出率
+			select round(br_a_tab.br_count/br_b_tab.vv_count,4) as br from (select count(*) as br_count from (select ssid from dataclear where reportTime = '2017-05-18' group by ssid having count(*) = 1) as br_tab) as br_a_tab,(select count(distinct ssid) as vv_count from dataclear where reportTime='2017-05-18') as br_b_tab;
+			
+		newip
+			新增ip总数 - 今天一天内 所有ip 去重后 在历史数据中从未出现过的总数 - 今天去重后的ip  历史上的ip
+			select count(distinct dataclear.cip) from dataclear where reportTime='2017-05-18' and cip not in (select inner_dataclear.cip from dataclear as inner_dataclear where datediff(inner_dataclear.reportTime,'2017-05-18')<0);
+
+		newcust
+			新增客户数 - 今天一天内 所有客户编号 去重后 在历史数据中从未出现过的总数 - 今天去重后的uvid 历史上的uvid
+			select count(distinct dataclear.uvid) from dataclear where reportTime='2017-05-18' and uvid not in (select inner_dataclear.uvid from dataclear as inner_dataclear where datediff(inner_dataclear.reportTime,'2017-05-18')<0);
+
+		avgtime
+			平均访问时长 - 今天一天内所有会话 访问时长的平均值 - 一个会话的访问时长 - 这个会话所有访问的时间 avg(结束时间 - 开始时间)
+			select round(avg(usetime),4) from (select max(sstime) - min(sstime) as usetime from dataclear where reportTime='2017-05-18' group by ssid) as avgtime_tab;
+			
+		avgdeep
+			平均访问深度 - 今天一天内所有会话 访问深度的平均值 - 一个会话中访问页面去重后的总数
+			select round(avg(deep),2) avgdeep from (select count(distinct urlname) as deep from dataclear where reportTime='2017-05-18' group by ssid) as avgdeep_tab;
+
+		create table tongji(reportTime string,pv int,uv int,vv int,br double,newip int,newcust int,avgtime double,avgdeep double)row format delimited fields terminated by '|';
+	
+		insert overwrite table tongji 
+			select '2017-05-18',tab1.pv,tab2.uv,tab3.vv,tab4.br,tab5.newip,tab6.newcust,tab7.avgtime,tab8.avgdeep from
+			(select count(*) as pv from dataclear where reportTime = '2017-05-18') as tab1,
+			(select count(distinct uvid) as uv from dataclear where reportTime='2017-05-18') as tab2,
+			(select count(distinct ssid) as vv from dataclear where reportTime='2017-05-18') as tab3,
+			(select round(br_a_tab.br_count/br_b_tab.vv_count,4) as br from (select count(*) as br_count from (select ssid from dataclear where reportTime = '2017-05-18' group by ssid having count(*) = 1) as br_tab) as br_a_tab,(select count(distinct ssid) as vv_count from dataclear where reportTime='2017-05-18') as br_b_tab) as tab4,
+			(select count(distinct dataclear.cip) as newip from dataclear where reportTime='2017-05-18' and cip not in (select inner_dataclear.cip from dataclear as inner_dataclear where datediff(inner_dataclear.reportTime,'2017-05-18')<0)) as tab5,
+			(select count(distinct dataclear.uvid) as newcust from dataclear where reportTime='2017-05-18' and uvid not in (select inner_dataclear.uvid from dataclear as inner_dataclear where datediff(inner_dataclear.reportTime,'2017-05-18')<0)) as tab6,
+			(select round(avg(usetime),4) as avgtime from (select max(sstime) - min(sstime) as usetime from dataclear where reportTime='2017-05-18' group by ssid) as avgtime_tab) as tab7,
+			(select round(avg(deep),2) as avgdeep from (select count(distinct urlname) as deep from dataclear where reportTime='2017-05-18' group by ssid) as avgdeep_tab) as tab8
+			
+		为了自动化执行，将如上的hql改造，将其中变化的内容用占位符替代 每次启动时 动态指定
+			insert overwrite table tongji  select '${rtime}',tab1.pv,tab2.uv,tab3.vv,tab4.br,tab5.newip,tab6.newcust,tab7.avgtime,tab8.avgdeep from (select count(*) as pv from dataclear where reportTime = '${rtime}') as tab1, (select count(distinct uvid) as uv from dataclear where reportTime='${rtime}') as tab2, (select count(distinct ssid) as vv from dataclear where reportTime='${rtime}') as tab3, (select round(br_a_tab.br_count/br_b_tab.vv_count,4) as br from (select count(*) as br_count from (select ssid from dataclear where reportTime = '${rtime}' group by ssid having count(*) = 1) as br_tab) as br_a_tab,(select count(distinct ssid) as vv_count from dataclear where reportTime='${rtime}') as br_b_tab) as tab4, (select count(distinct dataclear.cip) as newip from dataclear where reportTime='${rtime}' and cip not in (select inner_dataclear.cip from dataclear as inner_dataclear where datediff(inner_dataclear.reportTime,'${rtime}')<0)) as tab5, (select count(distinct dataclear.uvid) as newcust from dataclear where reportTime='${rtime}' and uvid not in (select inner_dataclear.uvid from dataclear as inner_dataclear where datediff(inner_dataclear.reportTime,'${rtime}')<0)) as tab6, (select round(avg(usetime),4) as avgtime from (select max(sstime) - min(sstime) as usetime from dataclear where reportTime='${rtime}' group by ssid) as avgtime_tab) as tab7, (select round(avg(deep),2) as avgdeep from (select count(distinct urlname) as deep from dataclear where reportTime='${rtime}' group by ssid) as avgdeep_tab) as tab8
+
+		再在启动时通过以下方式动态指定变量值：
+			./hive -f /root/work/tongji.hql -d rtime='2017-05-18'
+
+		====hive中的变量使用 和 文件执行=================
+			hive定义变量
+				./hive --define key=value
+				或
+				./hive -d key=value
+			hive使用变量
+				${hivevar:key} 
+				或 
+				${key}
+			hive调用hql脚本
+				./hive -e "HQL"
+				或
+				./hive -f HQL文件
+		===========================================
+
+	5.使用sqoop导出数据到mysql
+		create database fluxdb;
+		use fluxdb;
+		create table tongji_1(
+			reportTime date,
+			pv int,
+			uv int,
+			vv int,
+			br double,
+			newip int,
+			avgtime double,
+			newcust int,
+			avgdeep double
+		); 
+
+		sqoop export --connect jdbc:mysql://192.168.242.101:3306/fluxdb --username root --password root --export-dir '/user/hive/warehouse/fluxdb.db/tongji' --table tongji_1 -m 1 --fields-terminated-by '|'
+
+	
+五、实时分析
+	1.kafka中创建主题
+		
+	2.storm从kafka中消费数据
+		storm提供了storm从kafka消费数据的jar包
+			storm开发包
+			kafka开发包
+			storm连接kafka的开发包
+			其他包
+			**注意可能要删除重复的log4j相关的包
+
+		导入相关jar包 按照文档编写代码即可实现storm从kafka消费数据
+
+		方式一：可以自己开发spout利用kafka提供的api消费数据
+		方式二：利用storm提供的kafka扩展包连接
+			String topic = "flux";
+			BrokerHosts hosts = new ZkHosts("hadoop01,hadoop02,hadoop03:2181");
+			SpoutConfig spoutConfig = new SpoutConfig(hosts,topic, "/" + topic, UUID.randomUUID().toString());
+			spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+			KafkaSpout spout = new KafkaSpout(spoutConfig);
+
+	3.处理业务逻辑
+		数据清洗
+			"url","urlname","uvid","sid","scount","stime","cip"
+		pv
+			用户一次访问就是一个pv 直接将每次访问都记为1个pv即可
+		uv
+			独立访客数 - 当前这个uvid 在今天的数据中是否是第一次出现 如果是记为1 否则为0
+				-应该将每条记录都存入hbase作为uv计算的依据
+				-每条记录过来时用uvid和数据库中今天的uvid进行比较 如果发现匹配 则uvid为0 匹配不到则记为1
+
+			设计hbase表结果：
+				列族的设计：
+					设计一个列族名为cf1即可
+				行将的设计：
+					"url","urlname","uvid","sid","scount","stime","cip"
+					time_uvid_cip_rand
+					1495244059010_45189712356761262218_0:0:0:0:0:0:0:1_xxxxx(5)
+					^\d+_xxxxx_.*$
+					^\d+_\d+_xxxx_.*$
+					^\d+_xxxx_.*$
+
+			create 'flux','cf1';
+
+		vv
+			当前访问是否是一个新的会话 - 是 则 vv为1 否则为0
+				
+		newip
+			当前的访问是否是一个历史上从未出现过的ip - 是 newip 为1 否则为0
+			
+		newcust
+			当前的访问是否是一个历史上从未出现过的uvid - 是 newcust 为1 否则为0
+
+		-------------------
+		br
+			跳出率 - 一段时间内 跳出的会话总数/所有的会话总数 得到的比率 - 由于不能根据一条日志 立即推断出是否是一个跳出的会话 所以这个参数不适合用实时计算
+
+		avgtime
+			平均在线时长 - 一段时间内 所有的会话在线时长的平均值 - 由于不能根据一条日志 立即推断出是否是一个会话的完结 所以这个参数不适合用实时计算
+
+		avgdeep
+			平均访问深度 - 一段时间内所有的会话访问深度的平均值 - 由于不能根据一条日志 立即推断出是否是一个会话的结束 所以这个参数不适合用实时计算
+
+		以上的参数都是需要积累一段时间数据后 基于这一段时间内数据来进行计算的 更适合于通过离线计算来实现
+		但是其实在现实情况中 如果想要在较短的时间段内进行如上参数的统计 每次都去启动离线分析是 不太效率的做法 甚至可能无法按时完成任务 像这种情况下人们还是期望能够以更类似于实时计算的方式来对数据做处理 虽然是一段时间内的数据的数据的处理 但是由于时间段比较小 数据量也不算太大 更像一个实时分析的场景
+		那么如何实现以上利用实时分析计算一段时间内数据的需求呢？
+		可以设计一个特殊的spout 内置一个定时器 每隔指定的时长就向后发送一个tuple表示时间到了 要求后续的bolt们进行计算 后续的bolt收到这个消息后 开始计算这段时间内收集到的数据
+
+		===Storm的tick机制--定时触发任务机制======================
+			storm在0.8以上的版本中提供了tick机制实现定时任务。
+			它能够让任何bolt的所有task每隔一段时间（精确到秒级，用户可以自定义）收到一个来自_systemd的_tick stream的tick tuple，bolt收到这样的tuple后可以根据业务需求完成相应的处理。
+			方式一：为某一个特定的bolt指定定时任务
+				在bolt中覆盖getComponentConfiguration，在其中设置conf的属性TOPOLOGY_TICK_TUPLE_FREQ_SECS设置为指定时间间隔
+					@Override
+					public Map<String, Object> getComponentConfiguration() {
+						Config conf = new Config();
+						conf.put(conf.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 900);
+						return conf;
+					}
+				这样这个bolt将会在程序启动后每隔指定时长都会收到一个定时发送tuple来触发程序
+				在execute方法中可以使用如下判断获知是否是定时任务出发的代码：
+					if (tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)  && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID)){
+						//是定时tuple触发的
+					}else{
+						//是普通tuple触发的
+					}
+			方式二：可以为整个topology指定定时任务，这样整个topology中的所有bolt都会定时收到tuple
+				代码如下
+					Config conf = new Config();
+					conf.put(conf.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 7);
+				如果即设置了全局定时器 又为某个bolt单独制定定时器，则单独启动的起作用。
+		==================================================		
+
+	4.结果存储到mysql中
+		create database fluxdb;
+		use fluxdb;
+		create table tongji_2(
+			stime DateTime,
+			pv int,
+			uv int,
+			vv int,
+			newip int,
+			newcust int
+		);
+
+		create table tongji_3(
+			stime DateTime,
+			br double,
+			avgtime double,
+			avgdeep double
+		);

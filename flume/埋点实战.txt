@@ -44,7 +44,7 @@ create external table flux(url string,urlname string,title string,chset string,s
 
 增加flux的分区信息
 alter table flux add partition(reportTime='2019-04-05') location '/flux/reportTime=2019-04-05';
-alter table flux drop partition(reportTime='2019-09-17');
+ -- alter table flux drop partition(reportTime='2019-09-17');
 
 alter table flux drop partition(reportTime='2019-04-05');
 创建数据清洗表dataclear
@@ -104,3 +104,15 @@ AvgDeep:平均访问深度，一天内所有会话访问深度的平均值。
 度，再求这些会话访问深度的平均值。
 1 select round(avg(avgdeep_tab.deep),4) as avgdeep from (select count(distinct urlname) as deep from
 dataclear where reportTime='2019-04-05' group by ssid) as avgdeep_tab;
+
+
+实时处理：
+PV:来一条数据PV+1
+UV：一天之内uvid去重后的数量，在实时分析中，一条日志获取其uvid，判断这个uvid在今天的之前的日志是否存在，如果没有出现过则为1 ，否则为0
+	涉及到storm总监数据的存储，可以存redis、mysql、hdfs、kafka等，根据情况选择；
+	本次存在hbase上；
+创建表：
+create 'flux', 'cf1'
+put 'flux', 'rk1', 'cf1:url', 'v1111'
+
+
