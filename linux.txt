@@ -29,3 +29,13 @@ rpm -ivh httpxxx
 
 rpm -qa|grep jdk
  yum list|grep jdk
+ 
+查找安装包路径：
+rpm -ql  pcre-devel.x86_64 0:8.32-17.el7
+
+rpm -qa|grep pcre
+
+rpm -ql pcre-8.32-17.el7.x86_64
+
+编译安装
+./configure --prefix=/usr/local/src/ngnix --with-pcre=/usr/local/src/pcre/pcre-8.39

@@ -1,0 +1,16 @@
+saprk安装：
+
+cd /usr/local/src/spark/
+下载安装包
+		上传到Linux进行解压
+		修改配置文件
+			复制conf spark-env.sh.template 文件为 spark-env.sh
+			在其中修改，增加如下内容
+				SPARK_LOCAL_IP=服务器IP地址
+3.spark的使用
+ cd /usr/local/src/spark/spark-2.4.1/bin/
+		./spark-shell --master=local 启动本地模式
+		启动后 发现打印消息
+			Spark context Web UI available at http://192.168.242.101:4040//Spark的浏览器界面
+			Spark context available as 'sc' (master = local, app id = local-1490336686508).//Spark提供了环境对象 sc
+			Spark session available as 'spark'.//Spark提供了会话独享spark

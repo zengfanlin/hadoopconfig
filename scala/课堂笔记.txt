@@ -1,0 +1,1591 @@
+一、Scala概述
+	c -- 面向过程编程
+	java -- 面向对象编程
+	scala -- 面向函数编程
+
+	函数式编程：将所有复杂的问题的解决 拆分为若干函数的处理 每一个函数可以去实现一部分功能 利用很多次函数的处理 最终解决问题。
+	函数式编程相对于面向对象编程 更加的抽象 好处是 代码可以非常的简洁 更多的采用常量而不是变量来解决问题 这样额外带来的好处 在线程并发时 可以减少甚至杜绝 多线程并发安全问题 特别适合于应用在处理高并发场景 分布式场景下的问题 函数式编程可以使用高阶函数 函数是一等公民 可以更加灵活的进行程序的编写。
+	函数式编程并不是面向对象编程的发展，而是另外一种解决问题的思路，两者之间也并没有绝对的好坏之分，在不同的场景中各有各的优缺点。
+	Scala是一种函数是编程的语言 同时具有面向对象编程的特点。
+
+	kafka - scala - 分布式消息队列 内部代码经常用来处理并发的问题 用scala可以大大简化其代码。
+	spark - scala - 处理多线程场景方便 另外 spark主要用作内存计算 经常要用来实现复杂的算法 利用scala这种函数式编程语言 可以大大简化代码。
+
+	.java --> .class --> jvm
+	.scala --> .class --> jvm
+
+	scala 是完全兼容java的 其实scala就是在java语言的基础上增加了一层编码的 “壳” 让程序人员 可以通过函数式编程的方式来开发程序。由于scala最终被编译为.class 所以其实本质上还是java 所以在scala中可以任意的调用java的api。
+	这样的好处显而易见
+		让java程序员可以更无障碍的转到scala
+		让原先java的api仍然可以在scala中使用 
+		公司中的java平台不用替换就可以使用scala
+	scala是一种函数式编程的语言，但是他继承自java，同时具有面向对象的绝大部分特点
+
+	
+二、scala安装配置
+	前提条件：
+		jdk安装并配置JAVA_HOME环境变量
+	安装scala
+		双击运行scala-2.11.7.msi按照提示安装
+	配置环境变量
+		将scala安装目录下的bin目录配置到path环境变量中
+
+三、scala的使用
+	scala可以运行在 交互模式 和 编译模式两种方式下			
+
+	交互模式: 在命令行下直接敲命令 或 将命令写在.scala文件中 通过命令直接执行 即可
+		命令行方式：
+			直接在 scala>	中敲代码区执行 
+		文件方式：
+			将代码写在.scala文件中
+			通过scala xxx.scala的方式来执行文件中的代码
+
+	编译模式: 将代码写在.scala文件中 通过编译命令将.scala编译为.class最终去运行
+		在.scala文件中编写好代码 具有入口函数
+		通过scalac 或 fsc 命令进行编译 产生对应的.class文件
+		再通过scala命令来调用
+		scalac 和 fsc 都可以进行编译工作 区别是 fsc会启动后台服务常驻系统后台 这样后续再进行编译的时候 速度就可以很快
+
+		编写文件:
+			object Person{
+				def main(args: Array[String]): Unit = {
+					println("hello scala hello world~")
+				}
+			}
+		进行编译：
+			scalac Demo.scala
+		调用执行：
+			scala Person
+		
+	**为了提高开发效率,可以使用scala的IDE工具 - 安装scala的eclipse版本的IDE
+		下载解压scala版本的eclipse
+		不推荐直接在原生的eclipse上安装插件，很容易出问题
+		
+四、常量和变量
+	和java中的概念相同
+		变量：可以在程序执行过程中进行修改
+		常量：一旦被赋值就不能再进行更改了
+	在java中变量用的比常量要多的多
+	但是在scala中更多的应用也更应该主动去应用常量值
+
+	var - 用来声明一个变量
+		scala> var xx : java.lang.String = "aaa"	
+		scala> var yy : String = "bbb" //java.lang 和 scala包是scala自动会导入的 其中的类和方法可以直接使用
+		scala> var zz = "ccc" //scala可以自动根据值的类型推断变量/常量的类型，所以不写类型声明也可以
+		scala> zz = "dd" //变量可以重新赋值
+		
+	val - 用来声明一个常量
+		scala> val xx : java.lang.String = "aaa"	
+		scala> val yy : String = "bbb"	
+		scala> val zz  = "ccc"	
+		scala> zz = "dd" //报错，因为常量不能修改
+			
+五、基本类型
+	Byte Short Int Long Char String Float Double Boolean
+	**其中String处于java.lang包下 其他的则处在scala包下 由于scala会自动导入java.lang和scala包所以这些类型可以在程序中直接使用
+	**其实可以认为scala中并没有真正意义上的基本类型(如java中的基本类型) 以上的九种基本类型其实也在包下是一个类
+	**在scala中以上基本数据类型区别于其他类的地方在于，他们的对象都以直接量的形式体现
+	**以上基本数据类型的直接量和java中基本完全相同，不再复述
+
+	和java中略有区别的地方：
+		String类型的"""用法：在String直接量中可以使用"""..."""的语法将一段内容直接包括起来，使其内容中可以包含任意字符而不需转义 而在这时可以在每行前使用管道符|控制缩进格式 在字符串上调用stripMargin来使字符串在|出对齐
+
+	以上基本类型都有其对应的富包装器
+		以上九个类提供的方法比较有限 为了拓展他们的功能scala提供了对应九个富包装器 其实也是九个类
+		这九个类的直接量在需要时可以自动被转换为其对应的富包装类来调用富包装类提供的额外方法
+
+		scala.runtime.RichByte
+		scala.runtime.RichShort
+		scala.runtime.RichInt
+		scala.runtime.RichLong
+		scala.runtime.RichChar
+		scala.runtime.RichString
+		scala.runtime.RichFloat
+		scala.runtime.RichDouble
+		scala.runtime.RichBoolean
+		
+六、操作符
+	1.scala中操作符即方法 方法即操作符
+		scala中的操作符其实是普通方法调用的另一种表现形式 
+		对以上基本的运算符的使用其实就是隐含的在调用对应的方法
+		val x1:Int = 2;
+	    val x2:Int = 3;
+	    var x3 = x1 + x2; 
+	    var x4 = x1.+(x2); //和上一行代码是等价的
+
+		反过来说 所有的方法也都可以像使用操作符一样使用
+
+		var str = "abcdef";
+		var x1 = str.indexOf("c");
+		var x2 = str indexOf "c";
+		var x3 = str.substring(2, 4);
+		var x4 = str substring (2,4) //如果参数有多个 需要用小括号包起来 
+		var x5 = str.toUpperCase();
+		var x6 = str.toUpperCase;//方法调用时如果不需要传入任何参数 小括号可以省略
+		var x7 = str toUpperCase;//这种写法 如果没有参数 则括号不用写
+
+		println(x1)
+		println(x2)
+
+		所以 可以认为 scala中并没有传统意义上的操作符 所有的操作符都是方法 所有的方法也都可以像操作符一样去使用
+
+	2.scala中的操作类型包括：
+		算数运算
+			+-*/
+		关系运算
+			> < >= <= 
+		逻辑运算
+			&& || !
+		位运算
+			>> >>> << ~ & | ^ 
+		比较运算
+			== !=
+
+		和java中基本相同,不同的地方：
+			比较运算符：
+				java中 如果是基本数据类型 == != 比较的是值 如果是复杂数据类型 比较的是对象的地址 如果不是想比较地址 而是想比较真正的内容需要使用 equals 方法
+				scala中 如果是基本数据类型 == != 比较的是值 如果是复杂数据类型 会隐含的调用equals进行比较 这也就意味着 scala中不存在 java中经典的 equals问题
+
+	3.操作符的种类
+		scala中操作符可以简单的分为三类
+			中缀操作符:操作符在两个操作数之间 2 + 3  等同于 (2).+(3)
+			前缀操作符:操作符在唯一的操作数之前 -1 +3 ~0xFF !false等同于 (1).unary_-
+					前缀操作符如同中缀操作符一样，也是方法调用的另一种方式，不同的是，方法名要在符号前加上前缀unary_ 例如 -2 等同于 (2).unary_-
+					能作为前缀操作符的操作符只有+-!~四种。所以如果你自己定义了unary_!方法就可以使用!前缀操作符来调用方法了,但是即使你定义了unary_*,*也不能用来调用该方法，因为*不是四种可用的前缀操作符之一。
+			后缀操作符:操作符在唯一的操作数之后 str toUpperCase 等同于 str.toUpperCase()
+					后缀操作符是不用点或括号调用的不带任何参数的方法。在Scala里，方法调用的空括号可以省略。但是如果去掉括号可能造成副作用就带上括号。
+
+	4.操作符的优先级
+		由于scala并没有真正的操作符 所谓的操作符其实是方法的一种形式 所以此处所谓的操作符的优先级 其实就是指的方法的优先级
+		在scala中方法的执行是有优先级的区别的
+		
+		这也是为了解决传统操作符优先级的问题的 例如
+			3 + 2 * 5 
+			我们期望获得的是13 
+			但是根据scala的特点 scala中所有的操作符其实就是方法 那么按照这种说法上面的 表达式应该等同于
+			(3).+(2) 得到5
+			(5).*(5) 得到25
+			与我们预期不符!scala如何解决此问题呢?靠的是操作符的优先级
+
+		scala中操作符(方法)的优先级是根据操作符(方法)的首字符决定的,以下符号越靠上优先级越高：
+			* / %
+			+-
+			:
+			=!
+			<>
+			&
+			^
+			|
+			所有字母
+			所有赋值操作符
+
+			另外如果操作符以=结尾，且操作符并非比较操作符 <= >= == 或 = 则操作符优先级等同于=，即优先级最低 例如 += -=等
+			另外同级别优先级从左到右统计
+			另外可以使用括号改变优先级，且这是个好习惯，特别是在scala这种可能过于简洁的语言中
+
+			!!!特殊的是,以:字符结尾的方法由它的右操作数调用，并传入左操作数。以其他字符结尾的方法与之相反。
+			a :: b 对应的是 (b).::(a) 而不是 (a).::(b)
+
+七、内建的控制结构
+	scala提供的控制结构并不算多 因为在函数式编程中 可以自己来开发出各种功能的控制结构 所以scala提供的原生控制结构仅仅够用为止。
+
+	1.if - 判断
+		if是具有返回值的，if判断后 将执行代码的最后一个表达式的值返回作为整个if执行后的结果 应该利用这个特点减少变量的使用
+		//var flag = true;
+		//var name = "";
+		//var x = if(flag) {name = "zhang"} else {name = "li"}
+		 
+		val name = if(3>2) "zhang" else "li";
+		println(name)
+	
+	2.while do...while - 循环	
+		和java中相同
+		while do...while无法控制返回值，或者说返回值是Unit,写成()
+		和java不同的是 赋值表达式本身的返回值也是Unit而不是值本身,所以像一下套路就没法用了
+		for((len = in.read(buf))!=0){
+			//doSomething。。。
+		}
+
+		由于while 和 do...while无法返回值,所以往往无法实现函数编程风格的代码，所以scala中while和do...while都比较少使用
+		那么如果真的想做循环该怎么实现呢？可以用递归函数来实现
+		var x = 0;
+		while(x<10){
+			x+=1
+		}
+
+		def fx(x:Int):Int={
+			if(x<10) fx(x+1) else x;
+		}
+		val x = fx(0);
+
+	3.for - 循环 遍历
+		增强for/普通for
+			val list = List(1,3,5,7,9);
+			for(x <- list){
+				println(x)
+			}
+			for(x <- 10 to 100){
+				println(x)
+			}
+			for(x <- 0 to list.size){
+				println(list(x))
+			}
+		过滤
+			案例：遍历0到100的偶数
+				val r = 0 to 100;
+    			for(x <- r if x % 2 == 0)println(x)
+			案例：遍历0到100的偶数 过滤出其中大于30小于80的数
+				val r = 0 to 100;
+				for(x <- r if x % 2 == 0;if x>30;if x<80)println(x)
+
+		嵌套循环
+			案例：实现九九乘法表
+				for(a <- 1 to 9; b <- 1 to a){
+					print(a + " * " + b + " = " + a*b + "\t") 
+					if(a == b)println;
+				}
+
+		流间变量绑定
+			for(a <- 1 to 9; b <- 1 to a; val str = "\r\n")
+				print(a + " * " + b + " = " + a*b + str) 
+			for(a <- 1 to 9; b <- 1 to a; val s = if(a == b)"\r\n" else "\t")
+	        	print(a + " * " + b + " = " + a*b + s) 
+
+		利用返回值 制造新的集合
+			for循环语句 本身的返回值是Unit类型，无论在循环体中返回什么都是无效的 最终得到的都是Unit的值
+			但是可以在循环中的循环条件和循环体之间加上yield关键字，那么 就可以将循环体产生的返回值 组成数组进行返回
+			var x = for(f<-files if !f.getName.startsWith(".");if f.getName.endsWith("c")) yield  f
+			println(x(0))
+
+	4.try catch finally语句
+		scala中继承了java的异常机制 提供了 程序中产生意外情况时 处理的机制
+		抛出异常的过程和java中基本一致通过throw关键字进行
+			throw XxxException()
+		一旦抛出可以当场捕获处理或接着向上抛，捕获异常是通过 try catch finally来实现的
+			try{
+				throw new RuntimeException("hahaha wo si la~");
+			}catch {
+				case t: NullPointerException =>  println("哈哈 空指针了")
+				case t: IOException => print("呵呵 IO异常") 
+				case t: RuntimeException => println("嘻嘻 运行时异常") 
+				case t: Throwable => println("拉拉 我也不知道咋了") 
+			}finally {
+				println("finally 最终无论是否有异常 无论异常被谁处理最终都会执行")
+			}
+
+			try catch 是有返回值的 
+			如果没有异常就是try语句的返回值 如果有异常就是catch语句的返回值 
+			注意不会是finally的返回值 finally即使有返回值 也会被抛弃 这点和java是不同的
+
+	5.match
+		scala中的match类似于其他语言的switch
+		val str = "bbb";
+		str match {
+			case "aaa" => println("xxx")
+			case "bbb" => println("yyy")
+			case "ccc" => println("zzz")
+			case _ => println("hehe")
+		}
+		以上方式在代码内部产生量额外影响 不符合函数式编程的规范 更合适的代码如下
+		val x = str match {
+			case "aaa" => "xxx"
+			case "bbb" => "yyy"
+			case "ccc" => "zzz"
+			case _ => "hehe"
+		}
+		println(x)
+
+		与java不同的是 match语句可以应用在任何类型量 或 表达式上
+		另外 不需要调用break语句了 match默认执行完一个case后直接跳出match
+		另外 match是具有返回值的 就是被选到的case的值
+
+	6.continue 和 break
+		scala中不存在continue 和 break
+		那如果需要控制循环继续或跳出时怎么办呢？ 可以在循环中用if和布尔类型变量模拟这个过程
+		但是这种方案仍然用到了变量，如果连变量都想去掉，可以使用递归来实现
+
+		案例：遍历0到100的偶数数进行累加 直到和大于50为止
+		java代码：
+			int x = 0;
+			int sum = 0;
+			while(x<100){
+				if(sum>50){
+					break;
+				}
+				if(x % 2 !=0){
+					continue;
+				}else{
+					sum += x;
+				}
+				x++;
+			}
+		Scala方式1，使用循环和变量：
+			var x = 0;
+			var sum = 0;
+			var sumOver = false;
+			while(x<100 && !sumOver){
+				if(sum>50){
+					sumOver = true;
+				}
+				if(x % 2 ==0){
+				
+				}else{
+					sum += x;
+				}
+			}
+		scala方式2，使用递归，避免变量的使用，更符合函数式编程的规范：
+			def fx(x:Int,sum:Int):Int = {
+				if(sum>50)sum
+				else if(x>=100)sum
+				else if(x % 2 ==0)fx(x+1,sum)
+				else fx(x+1,sum+x)
+			}
+			fx(0,0)
+
+	7.访问范围问题
+		java中根据不同大括号区分变量作用范围 不允许有叠加 外部看不到内部 内部能看到外部
+		scala中根据不同大括号区分变量作用范围 不允许有叠加 外部看不到内部 内部看不到外部
+		val a = 2;
+		if(true){
+			println(a)
+			val a = 3;
+			println(a)
+		}
+		println(a)
+八、函数和闭包
+	1.函数基本声明
+		函数其实是一段具有特定功能的代码的集合 由 函数修饰符 函数名 函数参数列表 函数返回值声明 函数体 组成
+		函数通过 def 关键字定义 
+		def前面可以具有修饰符 如可以通过private protected来控制其访问权限 注意没有public 不写默认就是public的 
+		也可跟上override final等关键字修饰
+		函数体中return关键字往往可以省略掉，一旦省略掉，函数将会返回整个函数体中最后一行表达式的值，这也要求整个函数体的最后一行必须是正确类型的值的表达式
+		大部分时候scala都可以自动推断出返回值的类型 所以通常返回值类型声明可以省略 但是注意 如果因为省略了返回值类型造成歧义 则一定要写上返回值声明
+		如果函数体只有一行内容，则包裹函数体的大括号可以省略
+		如果函数的参数为空，则包裹函数参数的小括号可以省略
+		如果返回值类型是UNIT,则另一种写法是可以去掉返回值类型和等号 把方法体写在花括号内,而这时方法内无论返回什么 返回值都是 UNIT										
+		
+		格式：[public/private/protected] def 函数名(参数列表):返回值声明 = {函数体}
+		
+		def xx(x:Int,y:Int):Int = {
+			return x + y
+		}
+		def xx(x:Int,y:Int) = {
+			x + y
+		}
+		def xx(x:Int,y:Int) = x + y
+		def yy(){。。。。。}
+
+	2.函数直接量的声明
+		函数的直接量的格式：
+				(参数列表) => {函数体}
+		如果函数体只有一行大括号可以省略。
+		如果参数类型可以推测得知 则参数列表中类型声明可以省略。
+		如果函数参数列表中只有一个参数 在不会产生歧义的情况下 小括号可以省略
+		例如：
+			(x:Int,y:Int) => {x+y}
+			(x:Int,y:Int) => x+y;x+2;
+			(x,y) => x+y;
+			x:Int => x+3
+			x => x+4
+			
+	3.scala中的函数的应用方式
+		成员方法 本地函数(内嵌在函数内的函数) 函数值(匿名函数) 高阶函数
+
+		(1)成员方法 -- 函数被使用在类的内部 作为类的一份子 称为类的成员方法
+			这种用法与java中函数用法类似 成为类的一个成员 成为成员方法
+			object Demo1 {
+				def isOk(line:String,needLen :Int):Boolean = {
+					line.length>needLen
+				}
+
+				def getSomeLineFromFile(fpath :String,needLen :Int) = {
+				val lines = Source.fromFile(fpath).getLines();
+					for(line <- lines if isOk(line,needLen)) yield line;
+				}
+
+				def main(args: Array[String]): Unit = {
+					val results = getSomeLineFromFile("a.txt", 5);
+					for(line <- results)println(line);
+				}
+			}
+		(2)本地函数 -- 函数内嵌的函数称为本地函数 这样的函数 只能在外部函数内部使用 外界无法访问
+			object Demo1 {
+				def getSomeLineFromFile(fpath :String,needLen :Int) = {
+					def isOk(line:String,needLen :Int):Boolean = {
+						line.length>needLen
+					}
+
+					val lines = Source.fromFile(fpath).getLines();
+					for(line <- lines if isOk(line,needLen)) yield line;
+				}
+
+				def main(args: Array[String]): Unit = {
+					val results = getSomeLineFromFile("a.txt", 5);
+					for(line <- results)println(line);
+				}
+			}
+
+		(3)函数值 - 匿名函数
+			函数在scala中是头等公民。
+			函数在scala中是头等公民，这体现在函数可以被任意的赋值给变量/常量 甚至可以当作另一个方法的实参被传递给另一个方法使用 或当作方法的返回值被返回出来。
+			而在java中只有变量/常量才能这么去使用
+			也就是说其实在scala中函数没什么可特别的 和别的直接量一样可以到处使用
+
+			将函数直接量赋值给一个常量/变量 得到就是一个函数值
+			在需要时可以通过这个函数值来调用方法本身
+			var m = (x:Int,y:Int) => x*y;
+			val num  = m(3,2);
+			println(num)
+
+			被赋值给一个变量/常量来使用,后续可以通过变量调用这个方法
+					var m = (x:Int,y:Int) => x*y;
+					val num  = m(3,2);
+					println(num)
+					m = (x:Int,y:Int) => x+y;
+					val num2 = m(3,2);
+					println(num2)
+		(4)高阶函数
+			之后讲
+
+			将一个函数直接量用作方法的参数
+				var arr:Array[String] = Array("aaa","bbb","ccc");
+				arr.foreach((x:String)=>println(x));
+
+			将一个函数直接量用作方法的返回值
+				def fxx:(String)=>Unit={
+					x => println(x)
+				}
+				val list = List("aaa","bbb","ccc");
+				list.foreach(fxx(_));
+
+	3.使用占位符
+		scala中的下划线_是一个神奇的占位符，可以用它当作一个或多个参数来使用
+		可以使用下划线_占位符的前提要求是每个参数在函数直接量中仅出现一次，满足条件的情况下 可以去掉参数的说明，直接在函数体中使用下划线即可
+		使用下划线时，如果类型可以自动推断出，则不用声明类型，如果无法自动推断类型，则在下划线后自己来显示声明类型即可
+		someNumbers.foreach(println(_))
+		someNumbers.filter(_ >0)
+		val f = (_:Int) + (_:Int)
+		val f = _ + _;//报错 未知类型
+		调用: f(5,10)
+
+		这个用法也可以用来替代整个参数列表
+			def sum(a:Int,b:Int,c:Int) = a + b + c
+			var a = sum_
+			a(1,2,3)
+
+		也可以用来替代参数列表中的一部分参数
+			var b = sum(1,_:int,3)
+			b(2)
+
+		甚至可以这样：
+			someNumbers.foreach(_=>println(_))
+			someNumbers.foreach(println(_))
+			someNumbers.foreach(println_)
+			someNumbers.foreach(println)
+
+	4.闭包
+		如果在函数直接量定义时，如果用到了上下文中的变量，则函数的具体执行将会和该变量的值具有了相关性，即这个函数包含了外部该变量的引用，这个过程称之为函数的闭包。
+		这种情况下 变量值的变化将会影响函数的执行 同样函数执行的过程中改变了变量的值 也会影响其他位置对变量的使用。甚至在一些极端情况下，变量所在的环境已经被释放，但是由于函数中包含对它的引用，变量依然会存在。
+
+	5.重复参数(可变参数)
+		在scala中，可以指明函数的最后一个参数是重复的。从而允许客户向函数传入可变参数的列表。
+		想要标注一个重复参数，可以在参数的类型之后放一个星号。
+		scala> def echo(args :String *) = for(arg <- args)println(arg)
+		调用：
+			echo("aaa","bbb","ccc")
+		在函数内部，重复参数(可变参数)的类型是声明参数类型的数组。
+
+	6.尾递归
+		scala中为了避免使用while循环需要用递归。
+		如果在递归时，保证函数体的最后一行为调用自己的代码 则称这样的递归为尾递归 
+		scala会优化它 来大大提高其性能。
+
+九、自建立控制结构 - 高阶函数 - 柯里化 
+	1.高阶函数
+		定义一个函数能够接受另一个函数作为参数传入，这样的函数称为高阶函数
+		高阶函数为我们提供额外的机会去组织和简化代码
+		def addAndPrint(x:Int,y:Int,z:(Int)=>Unit) = {
+			val sum = x+y
+			z(sum)
+		}
+
+		def p1(num:Int){
+			println("哈哈哈我是p1~~"+num)
+		}
+		def p2(num:Int){
+			println("呵呵呵我是p2~~"+num)
+		}
+
+		def main(args: Array[String]): Unit = {
+			addAndPrint(2,3,p2);
+		}
+
+	2.柯里化
+		所谓的柯里化就是将一个函数的参数列表 拆分成多个参数列表的过程
+		def addAndPrint(x:Int,y:Int,z:(Int)=>Unit) = {
+			val sum = x+y
+			z(sum)
+		}
+		def addAndPrint2(x:Int,y:Int)(z:(Int)=>Unit) = {
+			val sum = x+y
+			z(sum)
+		}
+		def addAndPrint3(x:Int)(y:Int)(z:(Int)=>Unit) = {
+			val sum = x+y
+			z(sum)
+		}
+
+	3.自定义控制结构
+		scala内置的控制结构并不多，仅仅是够用为止，之所以这样做，是因为scala给我们提供了自定义控制结构的能力
+		这个自定义控制结构是通过 高阶函数+柯里化 来实现的
+		def addAndPrint2(x:Int,y:Int)(z:(Int)=>Unit) = {
+			val sum = x+y
+			z(sum)
+		}
+
+		在需要的时候可以调用这个方法：
+			addAndPrint2(2,3)((num:Int)=>{println("嘻嘻嘻，我是函数直接量~~"+num)});
+		而最后一个小括号其实可以改成大括号：
+			addAndPrint2(2,3){
+				(num:Int)=>{println("嘻嘻嘻，我是函数直接量~~"+num)}
+			};
+		到这一步我们发现，这个addAndPrint2方法用起来就非常类似于if while 等等的控制结构一样 相当于我们开发了一个这样的控制结构 可以帮我们把传入的两个Int做加法 然后 将得到的结果 执行大括号内的逻辑
+
+
+十、类
+	1.类概述
+		scala中的类和java中基本类似。
+		scala中的类同样通过class来进行声明
+		scala中的类同样可以具有成员变量和成员方法
+		scala中的类同样可以通过new关键字来创建出对象
+		成员属性和成员方法默认都是public的 需要私有可以写private 需要保护可以写protected
+		
+	2.单例对象
+		scala中的类不能定义静态成员，而代之以定义单例对象来替代。
+		单例对象需要通过object关键字来声明 
+		一个单例对象可以单独存在 也可以绑定到一个类上
+		单例对象当中的所有方法 都可以不需要创建对象 直接通过object单例对象的名字直接来调用 用起来感觉就像一个静态方法一样。
+		当一个单例对象和某个类写在同一个源文件中且共享同一个名字时，他们就产生了一个绑定的关系 
+		此时单例对象称为该类的伴生对象。类称为该对象的伴生类。
+		类和他的伴生对象可以互相访问其私有成员。
+		以伴生的方式使为类增加静态成员称为了可能
+		
+		单例对象不能new，因此也没有构造参数。
+		可以把单例对象当作是java中可能会用到的静态方法工具类。
+		作为程序的入口main方法必须是静态的，所以main方法必须处在一个单例对象中 而不能写在一个类中。
+		单例对象在第一次被访问时才会被初始化。可以理解为来自于scala自带的predef
+
+	3.类的详解
+		Scala中会自动引入java.lang、scala(其中包含了九种基本类型中的八种的声明)、predef包(单例对象、print、println方法)，所以可以直接使用这三个保中的内容
+		类的声明:
+				class 类名(构造参数列表){
+					类的体
+				}
+			如果没有构造参数则构造参数列表可以省略
+				class 类名{
+					类的体
+				}
+			如果没有类的体则包含类的体的大括号可以省略
+				class 类名
+
+		类的构造：
+			和java不同 scala中的类不需要明确声明一个构造器 而是直接将构造参数通过构造参数列表声明为类的一部分 而直接写在类的体中 既不是类的成员变量也不是成员函数的部分 会自动收集为构造函数的体。
+			
+			例如：
+				class Demo8(name:String,age:Int){
+					val num:Int=0;
+					def mx(){}
+
+					print("哈哈我初始化了~")
+				}
+			等同于java中
+				class Demo8{
+					val num:Int=0;
+					def mx(){}
+					public Demo8(name:String,age:Int){
+						print("哈哈我初始化了~")
+					}
+				}	
+
+		辅助构造器
+			有些时候 一个类里需要多个构造器。scala里构造器之外的构造器被称为辅助构造器。
+			Scala的辅助构造器定义开始于 def this() 
+			Scala里每个辅助构造器的第一个动作都是调用同类的别的构造器。
+			被调用的既可以是主构造器，也可以是其他提前定义的辅助构造器。
+			因此无论通过哪个构造器创建对象其实最终都会调用到主构造器，可以说主构造器是类的唯一入口。	
+			class Demo8(name:String,age:Int){
+				val num:Int=0;
+				def mx(){}
+
+				print("哈哈我初始化了~")
+
+				def this(name:String){
+					this(name,20);
+					println("呵呵 我是有一个name参数的辅助构造器 ")
+				}
+
+				def this(){
+					this("li")
+					println("嘻嘻 我是无参的辅助构造器 ")
+				}
+			}
+
+	4.重写和重载
+		重写是指覆盖父类中的方法 来在子类中做其他事项
+			override def 父类方法名 参数列表 返回值 方法体
+		重载是指在同一个类中提供方法名相同但是参数不同的方法
+			和java中基本一致
+
+	5.属性即无参方法 无参方法即属性 
+		在类中成员属性可以想象成一个无参的方法 而类中无参的方法只要没有用到变量也没有产生任何其他副作用 因为他的执行等价于一个固定的值 也可以想象成一个属性
+		那么在声明一个参数为空的成员方法时要不要加上括号呢？这会影响为来使用这个方法的人的感受
+		官方建议是：
+			如果这个方法没有使用其他外部变量 也没有产生任何副作用 也就是说完全可以把他想象成一个属性 那么这种情况下 不要写括号 让外界使用者感觉这就像一个属性一样 屏蔽掉底层其实是个方法的细节
+			如果这个方法用到了其他外部变量或会产生任何副作用 那么在声明的时候加上括号 防止用户在使用这个方法时 误解其为一个成员属性
+十一、类2
+	1.包
+		类似于java中的包 scala也有包的结构 可以将代码分包存放 使其不同包下的类、特质、单例对象具有不同的签名防止重名冲突。
+		两种声明方式：
+			方式一：通过package关键字来声明当前文件所在的包名
+				package cn.tedu.park
+			方式二：通过package关键字来包裹一段代码 使其处在一个指定包中 这种方式可以让我们在同一个文件中写出处于不同包下的代码
+				package cn{
+					package tedu{
+						//此处的代码相当于处在cn.tedu包下
+					}
+					package park{
+						//此处的代码相当于处在cn.park包下
+					}
+				}	
+
+	2.引用
+		类似于java中通过import关键字引入包/类 scala也可以实现这种方式引入，但是更强大一些
+			scala中的import可以出现在代码任何地方
+			scala中的import时可以指的是对象和包
+			scala中的import可以重命名或隐藏一些被引用的成员
+			import cn.tedu._
+			import cn.tedu.{Apple,Orange}
+			import cn.tedu.{SimpleDateFormat => SDF}
+
+		scala默认会自动引入如下三个包下的所有内容
+			java.lang //java中的通用类
+			scala._ //scala提供的通用类 主要是基本类型除了String
+			Predef._ //提供了单例对象 以及 一些常用方法 print println
+	3.访问权限控制
+		scala中提供了类似java的访问权限控制 包括 private protected public(public不能直接用 什么都不写默认就是public)
+		相对于java scala提供了更精细的访问权限控制能力
+		体现在：
+			private [额外允许的包名]
+			protected [额外允许的包名]
+					
+
+十二、类3
+	1.抽象类
+		scala中同样支持抽象类的使用 抽象类的内部可以包含抽象方法和非抽象方法
+		抽象类不允许被实例化 抽象类主要是用来被继承的
+		abstract class Demo9 {
+			def eat()
+			def say(){
+				 println("哈哈")
+			}
+		}
+	2.继承
+		class Demo9x extends Demo9 {
+			def eat(): Unit = {}
+		}
+
+	3.实现父类的构造
+		class Demo9xx extends Demo9x("zhang"){
+
+		}
+		class Demo9zz(name:String,age:Int) extends Demo9x(name){
+			override def say(){
+				println("呵呵 子类中的打印")
+			}
+		}
+
+	4.多态
+		var d:Demo9 = new Demo9zz("zhang",19);
+		d.say();//执行的是子类中的方法
+
+	5.final的使用
+		可以用在成员变量、成员方法、类本身上
+		作用和java中相同
+	6.scala内部继承结构树
+		scala中所有的类都直接或间接继承自Any类
+			Any类包含了如下方法
+				final def ==(that:Any):Boolean
+				final def !=(that:Any):Boolean
+				def equals(that:Any):Boolean
+				def hashCode:Int
+				def toString:String
+			这也就意味着所有的scala类中都会具有以上方法
+		Any类具有两个直接子类
+			AnyVal
+				scala中内建的九种类型都继承自这个类
+					Byte Short Int Long Float Double Char Boolean Unit
+					这些类型都不能直接new 而应该使用其直接量
+			AnyRef
+				除了以上九个类 其他的类都直接或间接的继承自AnyRef 其实这个AnyRef就相当于是 java中的Object
+
+		scala中包含scala.Null的类型 这个类型只有一个值 null 
+			所有引用类型（直接或间接继承自AnyRef的类）类都是这个类型的祖先类
+			所以任意引用类型都可以被赋值为null
+
+		scala中包含scala.Nothing类 没有任何具体的值 当程序出现问题时 返回它
+			所有的scala类 都是他的祖先类
+			
+			Any
+			|
+			|-AnyVal
+				|- Byte Short Int Long Float Double Char Boolean Unit
+					|-scala.Nothing
+			|-AnyRef
+				|-其他类
+					|-scala.Null	
+						|-scala.Nothing
+
+	7.特质 trait -- 可以类比java中的接口，但是又和接口非常不一样
+		特质相当于java中的接口 java中称为类实现了接口 scala中称为混入了特质
+		定义特质
+			trait xxx{
+				def m1()
+				def m2(){....}
+			}
+		和java中的接口不同 scala中的特质可以包含具有方法体的方法
+		和抽象类不同的地方在于 scala的类只能单继承 但是可以多混入 利用这种方式可以实现类似c语言中多继承的特性
+		在类中可以通过extends 或 with 关键字来让类混入特质 如果类没有明确继承父类 extends关键字没有被占用 就可以使用extends 但是如已经使用了extends显示的继承了父类 再向混入特质就要用 with关键字了 一个类的声明中只能有一个 extends 但是可以有多个with
+		
+		trait Run{
+			def run()
+			def run(length:Long){
+			}
+		}
+		trait Eat{
+			def eat()
+		}
+
+		trait Sleep{
+			def sleep()
+		}
+		class Demo10 extends Run with Eat with Sleep {
+			def run(): Unit = {
+			}
+
+			def eat(): Unit = {
+			}
+
+			def sleep(): Unit = {
+			}
+		}
+	
+十三、其他
+	1.泛型
+		基本和java中相同，不同的是，泛型是用方括号引起来的
+		val arr = Array[String]();	
+	2.lazy
+		正常情况下通过val 和 var定义的量都会直接分配空间 即使这个量要在很久以后才使用，这样就会造成内存空间白白被占用
+		这种情况下可以加上lazy关键字 延后变量/常量赋值的位置 这样直到后续真正用到这个量时才真正开辟空间赋值 减少了内存的浪费
+		val name = "zhang"//直接分配空间 即使一时半会用不到
+		lazy val name = "zhang"//并不会立即分配空间 直到后续用到了才会分配
+	3.option 
+		在Scala中用来表示一个结果，它可能有值，也可能没有值，它有两个子Option
+		object Hello {
+			def main(args: Array[String]): Unit = {
+				println(div(10,5))
+				println(div(10,0))		//抛异常
+			}
+
+			def div(a:Int, b:Int) : Int ={
+				a/b
+			}
+		}
+		Option类型在Scala中用来表示一个结果，它可能有值，也可能没有值，它有两个子类Some表示有值，None表示没有值，例如：
+		def div(a: Int, b: Int): Option[Int] = {
+			if (b != 0) Some(a / b) else None
+		}
+		println(div(10, 5)) // 返回 Some(2)
+		println(div(10, 0)) // 返回 None
+		它的好处是简化了调用者的处理。
+		val x1 = div(10, 5).getOrElse(0)
+		val x2 = div(10, 0).getOrElse(0)
+		println(x1)
+		println(x2)
+
+	4.caseclass - 样例类
+		只要在声明类时 在class关键字前加上case关键字 这个类就成为了样例类
+		样例类和普通的区别在于：
+			默认实现序列化接口
+			默认自动覆盖 toString equals hashCode方法
+			不需要new可以直接生成对象
+		case class Teacher(var name:String, age:Int){
+			def teach(){
+			println(s"老师:${name}正在讲课......")
+		}
+
+		def add(age:Int){
+			println("add "+age)
+			}
+		}
+
+		object Teacher {
+			def main(args: Array[String]): Unit = {
+				val t1 = Teacher("露娜",18)  //创建对象省略new关键字
+				println(t1.name)
+				t1.name = "李璐"
+				println(t1.name)
+				t1.teach()
+
+				val t2 = Teacher("王莹",16)
+				t2 add 1  //当方法是对象的属性时，括号可以去掉
+			}
+		}
+
+十四、数组 - Array
+	包含类型相同长度固定的可变的数据的数据结构 底层由数组实现
+	定长数组：scala.collection.immutable.Array，一旦声明之后长度不可变 
+	变长数组：scala.collection.mutable.ArrayBuffer，动态数组
+
+	1.定义数组
+		var z:Array[String] = new Array[String](3)
+		var z = new Array[String](3)
+		var z = Array("aaa", "bbb", "ccc")
+
+	2.获取数组内容
+		z(2)
+
+	3.遍历数据
+		for(x <- z){
+			print(x);
+		}
+
+		for(x <- 0 to z.length -1){
+			print(z(x));
+		}
+
+	4.修改数组内容
+		z(2)="ddd"
+
+	5.多维数组
+		Scala不直接支持多维数组，但提供了各种方法来处理任何尺寸数组。
+		var myMatrix = Array.ofDim[Int](3,3)
+
+	6.其它方法
+		def concat[T]( xss: Array[T]* ): Array[T]
+			连接所有阵列成一个数组。
+		def copy( src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int ): Unit
+			复制一个数组到另一个。相当于Java的System.arraycopy(src, srcPos, dest, destPos, length).
+		def empty[T]: Array[T]
+			返回长度为0的数组
+		def iterate[T]( start: T, len: Int)( f: (T) => T ): Array[T]
+			返回一个包含一个函数的重复应用到初始值的数组。
+		def ofDim[T]( n1: Int ): Array[T]
+			创建数组给出的尺寸。
+		def ofDim[T]( n1: Int, n2: Int ): Array[Array[T]]
+			创建了一个2维数组
+		def ofDim[T]( n1: Int, n2: Int, n3: Int ): Array[Array[Array[T]]]
+			创建3维数组
+		def range( start: Int, end: Int, step: Int ): Array[Int]
+			返回包含一些整数间隔等间隔值的数组。
+		def range( start: Int, end: Int ): Array[Int]
+			返回包含的范围内增加整数序列的数组。
+		def tabulate[T]( n: Int )(f: (Int)=> T): Array[T]
+			返回包含一个给定的函数的值超过从0开始的范围内的整数值的数组。
+		def tabulate[T]( n1: Int, n2: Int )( f: (Int, Int ) => T): Array[Array[T]]
+			返回一个包含给定函数的值超过整数值从0开始范围的二维数组。
+
+十五、列表 - List
+	包含类型相同固定长度的不可变的数据的数据结构 底层用链表实现
+	定长列表：scala.collection.immutable.List，一旦声明之后长度不可变 
+	变长列表：scala.collection.mutable.ListBuffer，变长列表
+	1.创建列表
+		可以通过List提供的工厂方法创建列表
+		另外，列表也可以使用两种基本的构建模块来定义，一个无尾Nil和::
+		val fruit: List[String] = List("apples", "oranges", "pears")
+		val nums: List[Int] = List(1, 2, 3, 4)
+		val empty: List[Nothing] = List()
+		val fruit = "apples" :: ("oranges" :: ("pears" :: Nil))
+		val nums = 1 :: (2 :: (3 :: (4 :: Nil)))
+		val empty = Nil
+		val dim: List[List[Int]] =
+			List(
+				List(1, 0, 0),
+				List(0, 1, 0),
+				List(0, 0, 1)
+			)	
+		val dim = (1 :: (0 :: (0 :: Nil))) ::
+			(0 :: (1 :: (0 :: Nil))) ::
+			(0 :: (0 :: (1 :: Nil))) :: Nil
+
+	2.获取数据
+		list(3)		//按下标访问，获取第4个元素，但越往后越慢。
+		list.head	//list中的第一个元素
+		list.tail	//list中的除了第一个元素以外的剩余元素
+		list.length	//获取链表的长度
+		list.sum	//所有值累加
+
+	3.常用操作
+		连接列表，可以通过 ::方法或concat方法连接两个列表
+			val fruit1 = "apples" :: ("oranges" :: ("pears" :: Nil))
+			val fruit2 = "mangoes" :: ("banana" :: Nil)
+
+			// use two or more lists with ::: operator
+			var fruit = fruit1 ::: fruit2
+			println( "fruit1 ::: fruit2 : " + fruit )
+
+			// use two lists with Set.:::() method
+			fruit = fruit2.:::(fruit1)
+			println( "fruit1.:::(fruit2) : " + fruit )
+
+			// pass two or more lists as arguments
+			fruit = List.concat(fruit1, fruit2)
+			println( "List.concat(fruit1, fruit2) : " + fruit  )
+
+		后方增加元素，此方法将会产生新的list替代了原来的list
+			list.:+(6)	
+
+		前方增加元素，此方法将会产生新的list替代了原来的list
+			(6) +: list	
+
+		中间插入元素
+			println(list.take(2) ::: List(0) ::: list.takeRight(2))
+
+		删除左侧元素
+			println(list.drop(2))		
+
+		删除右侧元素
+			println(list.dropRight(2))		
+
+		更新元素
+			println(list.updated(2，30))
+
+		**注意以上方法看起来是改变了原有的列表 但是其实在底层是生成了一个新的列表 来替代了旧的列表
+
+十六、ArrayBuffer/ListBuffer
+	长度可变的数组/列表 类似String 和 StringBuffer的关系
+	以ArrayBuffer为例
+		import scala.collection.mutable.ArrayBuffer
+		val buffer = ArrayBuffer(1,2,3,4,5)
+		buffer += 6
+		buffer toArray
+		buffer clear
+		
+十七、通用方法
+	Exists 是否存在
+		集合中是否存在符合条件的元素
+		scala> List(1,2,3,4,5).exists( x => x%3==0)
+		res60: Boolean = true
+
+		scala> List(1,2,3,4,5).exists( x => x%30==0)
+		res61: Boolean = false
+
+	Sorted 排序
+		排序
+		scala> List(5,4,3,2,1).sorted
+		res63: List[Int] = List(1, 2, 3, 4, 5)
+
+		scala> List(5,44,3,23,10).sorted
+		res64: List[Int] = List(3, 5, 10, 23, 44)
+
+		scala> List(1,3,2,0,5,9,7).sortWith(_>_)
+		res65: List[Int] = List(9, 7, 5, 3, 2, 1, 0)
+
+		scala> List(1,3,2,0,5,9,7).sortWith(_<_)
+		res66: List[Int] = List(0, 1, 2, 3, 5, 7, 9)
+
+	Distinct去重
+		scala> List(1,2,3,4,5,3,2).distinct
+		res69: List[Int] = List(1, 2, 3, 4, 5)
+		
+	Reverse、ReverseMap反转
+		scala> 1 to 5
+		res71: scala.collection.immutable.Range.Inclusive = Range(1, 2, 3, 4, 5)
+
+		scala> 1 to 5 reverse
+		warning: there was one feature warning; re-run with -feature for details
+		res72: scala.collection.immutable.Range = Range(5, 4, 3, 2, 1)
+
+		scala> 1 to 5 reverseMap (1+)
+		warning: there was one feature warning; re-run with -feature for details
+		res73: scala.collection.immutable.IndexedSeq[Int] = Vector(6, 5, 4, 3, 2)
+
+		scala> 1 to 5 reverseMap (10*)
+		warning: there was one feature warning; re-run with -feature for details
+		res74: scala.collection.immutable.IndexedSeq[Int] = Vector(50, 40, 30, 20, 10)
+
+	Contains、startWith、endWith
+		scala> 1 to 5 contains 3
+		res77: Boolean = true
+
+		scala> 1 to 5 containsSlice (2 to 4)
+		res78: Boolean = true
+
+		scala> (1 to 5) startsWith (1 to 3)
+		res79: Boolean = true
+
+		scala> (1 to 5) endsWith (4 to 5)
+		res80: Boolean = true
+
+
+十八、Range
+	scala> 1 to 5 
+	res25: scala.collection.immutable.Range.Inclusive = Range(1, 2, 3, 4, 5)
+
+	scala> 1 to 5 toList
+	res26: List[Int] = List(1, 2, 3, 4, 5)
+
+
+十九、Vector
+	Scala2.8为了提高list的随机存取效率而引入的新集合类型（而list存取前部的元素快，越往后越慢）
+
+	scala> val v = Vector(5,9)
+	v: scala.collection.immutable.Vector[Int] = Vector(5, 9)
+
+	scala> val v2 = 0 +: v :+ 10
+	v2: scala.collection.immutable.Vector[Int] = Vector(0, 5, 9, 10)
+
+	scala> ('0' to '9') ++ ('A' to 'Z')
+	res21: scala.collection.immutable.IndexedSeq[Char] = Vector(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z)
+
+二十、Set 
+	元素不能重复，重复的会自动剔除，乱序
+	val set = Set(1,2,3,4,45,3,2,6)
+	println(set)
+
+二十一、Map
+	val map = Map(1 -> “北京”, 2 -> “上海”)	//->前面是key，后面是值
+	val map2 = map + (3 -> “广州”)	//产生新的map
+	val map3 = map - 2					//删除key=2的元素
+	println(map)
+	println(map2)
+	结果：
+		Map(1 -> “北京”, 2 -> “上海”)
+		Map(1 -> “北京”, 2 -> “上海”， 3 –> “广州”)
+
+	可以用zip()生成Map
+	scala> List(1,2,3).zip(List(100,200,300)).toMap
+	res90: scala.collection.immutable.Map[Int,Int] = Map(1 -> 100, 2 -> 200, 3 -> 300)
+
+	scala> List(1,2,3).zip(List(100,200,300))
+	res91: List[(Int, Int)] = List((1,100), (2,200), (3,300))
+
+二十二、Tuple
+	代表键值对，一般的键值对是一个键一个值，tuple一个键可以有多个值。
+	val t1 = (1,”北京”,”100086”,108.08,new java.util.Date())
+	println(t1._1)		//访问key，注意tuple下标是从1开始
+	println(t1._2)		//获取北京
+	println(t1._3)		//获取邮编
+
+	scala> 1->"beijing"
+	res12: (Int, String) = (1,beijing)
+
+	tuple可以设置多个值，不是无限的，最多22个
+	两个值它的类型就是Tuple2，三个值它的类型就是Tuple3，最多到Tuple22。
+
+二十三、集合运算
+	交集 &
+	scala> List(1,2,3,4) intersect List(3,4,5)
+	res81: List[Int] = List(3, 4)
+
+	差集 &~
+	scala> List(1,2,3,4) diff List(4,3,6)
+	res82: List[Int] = List(1, 2)
+
+	并集 |
+	scala> List(1,2,3,4) union List(3,4,5)
+	res83: List[Int] = List(1, 2, 3, 4, 3, 4, 5)
+
+二十四、集合中的高阶函数
+	1.partition拆分
+		将一个集合按一个布尔值分成两个集合，满足条件的一个集合，其他另外一个集合
+		//按奇偶数将集合划分为两个
+		scala> val b = Array(1,2,3,4,5).toList
+		b: List[Int] = List(1, 2, 3, 4, 5)
+
+		scala> b.partition( (x:Int) => (x%2==0))
+		res1: (List[Int], List[Int]) = (List(2, 4),List(1, 3, 5))
+	2.map映射
+		映射，把一个集合转换为另外一个集合。集合中元素个数不变
+
+		//每个元素+1
+		val list = List(1,2,3,4,5,6)
+		list.map { x => x+1 }    
+
+		//加上prefix和suffix，并自动转换为字符串类型
+		scala> val list = List("index","item","show")
+		list: List[String] = List(index, item, show)
+		scala> list.map{ x => "/WEB-INF/views/"+x+".jsp" }
+		res53: List[String] = List(/WEB-INF/views/index.jsp,/WEB-INF/views/item.jsp,/WEB-INF/views/show.jsp)
+
+		//转大写
+		scala> List("beijing","shanghai","xi'an").map( s=>s.toUpperCase())
+		res46: List[String] = List(BEIJING, SHANGHAI, XI'AN)
+
+		//转小写
+		scala> List("A","B").map( x=> x.toLowerCase())
+		res6: List[String] = List(a, b)
+
+	3.filter、filterNot过滤
+		用来过滤数据，要求函数返回布尔值，true留下，false不要。
+
+		scala> val list = List(1,2,3,4,5)
+		list: List[Int] = List(1, 2, 3, 4, 5)
+
+		scala> list.filter( x=> x>3)
+		res4: List[Int] = List(4, 5)
+
+		scala> list.filter( x=> x!=3)
+		res5: List[Int] = List(1, 2, 4, 5)
+
+		scala> list.filter( x=> x%2==1)
+		res6: List[Int] = List(1, 3, 5)
+
+		scala> list.filterNot( x=>x%2==1)
+		res52: List[Int] = List(2, 4)
+
+		scala> list.filter( x => x>3).filter(x => x<5)
+		res101: List[Int] = List(4)
+
+	4.reduce化简
+		reduce的过程：将上次的运行结果和下一个值进行运算
+
+		函数接收两个参数 => 返回一个值
+			val list = Array(1,2,3,4)
+			list.reduce{ (x,y) => x+y }
+			list.reduce{ (x,y) => println(s"x:$x y:$y");x+y }//注意外层必须是大括号
+		执行结果：
+			x:1 y:2
+			x:3 y:3
+			x:6 y:4
+			res62: Int = 10
+		内部的执行过程：
+			(1,2) 		=> 1+2	第一次运算
+			((1+2),3) 	=> 3+3	第二次运算
+			((3+3),4)	=> 6+4	第三次运算
+		和大数据中的mapreduce不同的时，大数据中的reduce的参数是键值对，而这里可以是任意对象。
+
+	5.par多线程并发
+		数据1,2,3,4相加。加法满足交换律和结合律，1跟2加也行，1跟3加也行。
+		那能不能让累加多个线程并行计算。
+		在scala中我们无需自己写代码，加个par就可以了。
+		parallelize
+		object TestList {
+			def main(args: Array[String]): Unit = {
+				val startTime = System.currentTimeMillis();  //开始毫秒数
+				val list = List(1,2,3,4)
+				list.par.reduce{
+					(x,y) => println("x:${x},y:${y}" + Thread.currentThread().getName); //当前处理线程名称
+					x+y
+				}
+				val stopTime = System.currentTimeMillis() - startTime
+				println(stopTime-startTime)
+			}
+		}
+		运行结果： 
+			x:1,y:2 ForkJoinPool-1-worker-5
+			x:3,y:4 ForkJoinPool-1-worker-3
+			x:3,y:7 ForkJoinPool-1-worker-5
+			10
+			235
+		可以看到它自动启动了2个线程。当然这个启动多少个线程这个无需我们控制。它会自动调用jvm的ForkJoinPool创建线程。
+		ForkJoinPool 是 Java SE 7 新功能“分叉/结合框架”的核心类。
+		分叉/结合框架是一个比较特殊的线程池框架，专用于需要将一个任务不断分解成子任务（分叉），再不断进行汇总得到最终结果（结合）的计算过程。
+		比起传统的线程池类ThreadPoolExecutor，ForkJoinPool 实现了工作窃取算法，使得空闲线程能够主动分担从别的线程分解出来的子任务，从而让所有的线程都尽可能处于饱满的工作状态，提高执行效率。
+		这样我们的运算就很容易从一个串行的版本变成一个并行的版本。这样性能就翻倍了。
+		因为它是同时运行。如果自己去for循环写，线程间的返回值啊这些就够写的了质量还无法控制。
+		注意：上面的例子数据量太小，所以多线程反而处理时间可能还大于单线程。但数据量大了自然多线程处理的快。
+
+	6.groupBy分组
+		val m = List(("北京",1),("上海",3),("天津",2), ("北京",2), ("北京",1), ("上海",4), ("北京",2))
+		m.groupBy { x => x._1 }		//x是Tuple类型：(String,Int)
+		运行结果：
+			Map(
+				上海->List((上海,3),(上海,4)), 
+				北京->List((北京,1),(北京,2) ,(北京,1) ,(北京,2),
+				天津->List((天津,2))
+			)
+
+	7.mapValues值映射
+		对map集合中的值做映射
+
+		//如实现list中是List((上海,3),(上海,4)) => List(3,4)
+		val list = List(("北京",1),("上海",2),("北京",9),("广州",1))
+		val map = list.groupBy( x => x._1)
+		println(map)
+
+		//只获取tuple中的值
+		map.mapValues( list => list.map(x => x._2) )
+		println(map)
+		
+		//按各个key，将list中的值进行累加
+		map.mapValues( list => list.map(x => x._2).reduce((x,y) => x+y))
+
+		运行结果：
+		Map(上海 -> List((上海,2)), 北京 -> List((北京,1), (北京,9)), 广州 -> List((广州,1)))
+		Map(上海 -> List(2), 北京 -> List(1, 9), 广州 -> List(1))
+		Map(上海 -> 2, 北京 -> 10, 广州 -> 1)
+		注意：list没有mapValues方法，map才有
+
+	8.单机wordCount
+		在c盘创建一个words.txt，里面存一些单词，然后进行单词计数。
+			big
+			data
+			big
+			spark
+			scala
+			spark
+			hadoop
+			hadoop
+			hive
+			spark
+		实现代码
+			import scala.io.Source
+
+			object WordCount {
+				def main(args: Array[String]): Unit = {
+					//读取一个外部文件的每一行，并转换为List
+					val list = Source.fromFile("c:/words.txt").getLines().toList
+						.map(x => (x,1))	//映射成一个tuple
+						.groupBy(x => x._1)	//按tuple的key进行分组
+						.mapValues(i => i.map(t => t._2)
+						.reduce((x,y) => x+y))
+					list.foreach( x=> println(x) )
+				}
+			}
+
+
+二十五、类型参数
+	1.集合类型参数
+		List<String> list = new ArrayList<String>();
+		val arr = new Array[String]();
+
+	2.自定义泛型
+		Scala中的类型参数，初步看与java中的泛型类似。
+			class Ani(name:String){
+				val namex = name
+			}
+
+			class Person(name:String) extends Ani(name){
+			}
+
+			class Dog(name:String) extends Ani(name){
+			}
+
+			class beating[T](a:T){
+				def beat(b:T){
+					println(a+"开始狠狠的揍了一顿"+b)
+				}
+			}
+ 
+		很多时候，我们要对类型限定边界，然后确认在内部调用时，他一定有其父类的方法。
+			上边界 语法格式  <: 指定该类是某个类型的子类或某类型本身
+			//下边界 语法格式  >: 指定该类是某个类型的父类或某类型本身
+
+			object Demo1 {
+				def main(args: Array[String]): Unit = {
+					val b = new beating(new Teacher("aaa"));
+					b.beat(new Teacher("bbb"))
+				}
+			}
+
+			class beating [T<:Person](t1:T){
+				def beat(t2:T){println(t1 + " is running " +t2)}  
+			}
+
+			class Person(name:String){
+				override def toString():String = {
+					"person~" + name
+				}
+			}
+
+			class Teacher(name:String) extends Person(name){
+				override def toString():String = {
+					"teacher~" + name
+				}
+			}
+
+			class Dog(name:String) {
+				override def toString():String = {
+					"Dog~" + name
+				}
+			}
+
+二十六、模式匹配
+	
+二十七、多线程
+	1.java中的多线程开发
+		Thread - Runnable
+			线程是并发最基本的单元。
+			Java线程本质上被映射到操作系统线程，并且每个线程对象对应着一个计算机底层线程。
+			每个线程有自己的栈空间，它占用了JVM进程空间的指定一部分。
+			线程的接口相当简明，你只需要提供一个Runnable，调用.start()开始计算。
+			没有现成的API来结束线程，你需要自己来实现。
+			优点是很接近并发计算的操作系统/硬件模型，并且这个模型非常简单。
+			多个线程运行，通过共享内存通讯。
+			最大劣势是，开发者很容易过分的关注线程的数量。
+			线程是很昂贵的对象，创建它们需要耗费大量的内存和时间。
+			这是一个矛盾，线程太少，你不能获得良好的并发性；线程太多，将很可能导致内存问题，调度也变得更复杂。
+			如果你需要一个快速和简单的解决方案，你绝对可以使用这个方法，不要犹豫。
+		Executor服务	
+			另一个选择是使用API来管理一组线程。
+			幸运的是，JVM为我们提供了这样的功能，就是Executor接口。
+			它隐藏了如何处理Runnable的细节。
+			它仅仅说，“开发者！给我任务，我会处理它！” 更酷的是，Executors类提供了一组方法，能够创建拥有完善配置的线程池和executor。
+			我们将使用newFixedThreadPool()，它创建预定义数量的线程，并且不允许线程数量超过这个预定义值。
+			这意味着，如果所有的线程都被使用的话，提交的命令将会被放到一个队列中等待；当然这是由executor来管理的。
+			在它的上层，有ExecutorService管理executor的生命周期，以及CompletionService会抽象掉更多细节，作为已完成任务的队列。
+			如果你需要精确的控制程序产生的线程数量，以及它们的精确行为，那么executor和executor服务将是正确的选择。
+			线程和服务的生命周期也可以通过选项来配置，使资源可以在恰当的时间关闭。
+			唯一的不便之处是，对新手来说，配置选项可以更简单和直观一些。然而，在并发编程方面，你几乎找不到更简单的了。
+			总之，对于大型系统，使用executor最合适。
+		ForkJoin框架	
+			通过并行流，使用ForkJoinPool (FJP)
+			Java 8中加入了并行流，从此我们有了一个并行处理集合的简单方法。它和lambda一起，构成了并发计算的一个强大工具。
+			如果你打算运用这种方法，那么有几点需要注意。
+			首先，你必须掌握一些函数编程的概念，它实际上更有优势。
+			其次，你很难知道并行流实际上是否使用了超过一个线程，这要由流的具体实现来决定。如果你无法控制流的数据源，你就无法确定它做了什么。
+			另外，你需要记住，默认情况下是通过ForkJoinPool.commonPool()实现并行的。
+			这个通用池由JVM来管理，并且被JVM进程内的所有线程共享。这简化了配置项，因此你不用担心。
+			ForkJoin是一个很好的框架，当需要写一个包含并行处理的小型程序时，它是第一选择。
+			它最大的缺点是，你必须预见到它可能产生的并发症。如果对JVM没有整体上的深入了解，这很难做到。这只能来自于经验。
+		Actor模型	
+			JDK中没有actor的实现；因此你必须引用一些实现了actor的库。
+			简短地说，在actor模型中，你把一切都看做是一个actor。
+			一个actor是一个计算实体，就像上面第一个例子中的线程，它可以从其他actor那里接收消息，因为一切都是actor。
+			在应答消息时，它可以给其他actor发送消息，或者创建新的actor并与之交互，或者只改变自己的内部状态。
+			相当简单，但这是一个非常强大的概念。
+			生命周期和消息传递由你的框架来管理，你只需要指定计算单元是什么就可以了。
+			另外，actor模型强调避免全局状态，这会带来很多便利。
+			你可以应用监督策略，例如免费重试，更简单的分布式系统设计，错误容忍度等等。
+
+			**Akka Actors
+				是最流行的JVM Actor库之一。
+				实际上，它也有Scala接口，并且是Scala目前默认的actor库。
+				Scala曾经在内部实现了actor。
+				不少JVM语言都实现了actor，比如Future。
+				这些说明了Actor模型已经被广泛接受，并被看做是对语言非常有价值的补充。
+				Akka actor在内部使用ForkJoin框架来处理工作。
+				Actor模型的强大之处来自于Props对象的接口，通过接口我们可以为actor定义特定的选择模式，定制的邮箱地址等。
+				结果系统也是可配置的，只包含了很少的活动件。这是一个很好的迹象！
+				使用Actor模型的一个劣势是，它要求你避免全局状态，因此你必须小心的设计你的应用程序，而这可能会使项目迁移变得很复杂。
+				同时，它也有不少优点，因此学习一些新的范例和使用新的库是完全值得的。
+
+
+	2.scala中的多线程开发
+		scala提供了一个对象Future对象来处理并发
+
+		非阻塞方式
+			import scala.concurrent.Future
+			//不导入此包下面会有提示错误
+			import scala.concurrent.ExecutionContext.Implicits.global
+			object TestConcurrent {
+				def main(args: Array[String]): Unit = {
+					//创建了Future对象，scala就把它关联到线程池，然后执行future中的代码
+					//返回结果就自动触发了onSuccess事件通过case语句就可以得到返回结果。
+					var fu = Future{
+						println("开始运行计算")
+						Thread.sleep(200)
+						100 //返回值
+					}
+					fu.onSuccess{			//成功后通过此事件触发
+						case x => println(x)
+					}
+					Thread.sleep(1000)    //主线程等1秒，要大于fu的延迟时间，必须写，否则无法执行！
+				}
+			}
+
+		阻塞方式
+			import scala.concurrent.Future
+			import scala.concurrent.ExecutionContext.Implicits.global
+			import scala.concurrent.Await
+			import scala.concurrent.duration.Duration
+
+			object TestConcurrent {
+				def main(args: Array[String]): Unit = {
+				var fu = Future{
+					println("开始运行计算")
+					Thread.sleep(200)
+					100 //返回值
+				}
+				//也可以主线程得到返回值，主线程是阻塞的
+				val r = Await.result(fu, Duration.Inf)  //持久化：永久
+					println(r)
+				}
+			}
+
+		Futrue多线程并发结果合并
+			import scala.concurrent.Future
+			import scala.concurrent.ExecutionContext.Implicits.global
+			import scala.concurrent.Await
+			import scala.concurrent.duration.Duration
+
+			object TestConcurrent {
+				def main(args: Array[String]): Unit = {
+					val fu1 = Future{
+						println("f1开始运行计算")
+						Thread.sleep(200)
+						100
+					}
+					val fu2 = Future{
+						println("f2开始运行计算")
+						Thread.sleep(300)
+						200
+					}
+					//yield把结果放到一个新的数组中
+					val c = for(a <- fu1; b <- fu2) yield (a+b)   //并发的
+					println(Await.result(c, Duration.Inf))    //阻塞的
+				}
+			}
+
+		scala内置的线程机制基本上很少使用 但是为了让大家有个了解 此处还是给大家写了示例代码 但是不需要掌握
+		
+二十、Akka分布式编程
+	1.Actor模式
+		Actor模式是一种并发模型，与另一种模型共享内存完全相反，Actor模型share nothing。
+		所有的线程(或进程)通过消息传递的方式进行合作，这些线程(或进程)称为Actor。
+		共享内存更适合单机多核的并发编程，而且共享带来的问题很多，编程也困难。
+		随着多核时代和分布式系统的到来，共享模型已经不太适合并发编程，因此几十年前就已经出现的Actor模型又重新受到了人们的重视
+
+		Actor，可以看作是一个个独立的实体，他们之间是毫无关联的。
+		但是，他们可以通过消息来通信。
+		一个Actor收到其他Actor的信息后，它可以根据需要作出各种相应。
+		消息的类型可以是任意的，消息的内容也可以是任意的。这点有点像webservice了。只提供接口服务，你不必了解我是如何实现的。
+ 
+		一个Actor如何处理多个Actor的请求呢？
+		它先建立一个消息队列，每次收到消息后，就放入队列，而它每次也从队列中取出消息体来处理。
+		通常我们都使得这个过程是循环的。让Actor可以时刻处理发送来的消息。	
+
+	2.Akka概述
+		Akka把Actor带到了Java世界
+		Akka是使用Scala语言编写的，同时支持java和scala，基于Actor模型的框架。
+		可以用来开发高并发、分布式、基于消息驱动的应用程序。
+		它被应用在Spark中以实现节点之间的通信。
+
+		Akka的消息分为两类：
+			!(“告知”) //发送消息并立即返回 
+			?(“请求”) //发送消息并返回一个Future对象，代表一个可能的应答
+
+	3.环境搭建
+		创建akka环境
+			到官网 akka.io 下载对应的包 要注意的是 一定要下载匹配scala和jdk保本的包
+			在工程的pom文件中加入以下依赖：
+			<dependency>
+				<groupId>com.typesafe.akka</groupId>
+				<artifactId>akka-remote_2.11</artifactId>
+				<version>2.3.11</version>
+			</dependency>
+			<dependency>
+				<groupId>com.typesafe.akka</groupId>
+				<artifactId>akka-actor_2.11</artifactId>
+				<version>2.3.11</version>
+			</dependency>	
+			如果不想maven下载 也可以手动将akka包中的lib导入到项目中
+
+	4.入门案例
+		package cn.tedu.akka
+		import scala.actors._, Actor._ 
+		object AkkaDemo1 {
+			class Person(name:String){
+				val namex = name;
+			}
+			def main(args: Array[String]): Unit = {
+				val myActor = actor{
+					receive{
+						case msg:String => println("字符串："+msg)
+						case msg:Int => println("整形："+msg)
+						case msg:Person => println("Person："+msg.namex)
+					}
+				}
+				myActor ! new Person("zhang");
+			}
+		}
+
+	5.两个Actor之间的通信
+		package cn.tedu.akka
+
+		import akka.actor.Actor
+		import akka.actor.ActorSystem
+		import akka.actor.Props
+
+		object AkkaDemo2 {
+			class Actor1 extends Actor {
+				def receive = {
+					case msg:String =>{
+						println("Actor1:"+msg)
+						val b = context.actorOf(Props[Actor2]);
+						b ! "你好，Actor2~~"
+					}
+				}
+			}
+			class Actor2 extends Actor {
+				def receive = {
+					case msg:String =>println("Actor2:"+msg)
+				}
+			}
+
+			def main(args: Array[String]): Unit = {
+				val sys = ActorSystem("sys");
+				val a = sys.actorOf(Props[Actor1])
+				a ! "你好，Actor1~~"
+			}
+		}
+
+	6.两个进程之间Actor的通信
+		package cn.tedu.akka
+
+		class Student(name:String) extends Serializable {
+			val namex = name
+		}
+	
+		package cn.tedu.akka
+
+		import akka.actor.Actor
+		import java.util.HashMap
+		import java.util.ArrayList
+		import akka.actor.ActorSystem
+		import com.typesafe.config.ConfigFactory
+		import akka.actor.Props
+
+		object AkkaDemo3 {
+			class Actor4 extends Actor {
+				def receive = {
+					case msg:String =>println("Actor2:"+msg)
+					case msg:Student =>println("Actor2:"+msg.namex)
+				}
+			}
+			def main(args: Array[String]): Unit = {
+				val conf = new HashMap[String,Object]()
+
+				val list = new ArrayList[String]()
+				list.add("akka.remote.netty.tcp")
+				conf.put("akka.remote.enabled-transports", list)  //参数是个集合
+				conf.put("akka.actor.provider", "akka.remote.RemoteActorRefProvider")
+				conf.put("akka.remote.netty.tcp.hostname", "127.0.0.1")
+				conf.put("akka.remote.netty.tcp.port", "44444")
+
+				val sys = ActorSystem("myAkkaServerSys",ConfigFactory.parseMap(conf));
+				sys.actorOf(Props[Actor4],"actor4")
+			}
+		}
+
+		package cn.tedu.akka
+
+		import akka.actor.ActorSystem
+		import com.typesafe.config.ConfigFactory
+
+		object AkkaDemo4 {
+			def main(args: Array[String]): Unit = {
+				//参数配置
+				val conf = new java.util.HashMap[String,Object]()
+				val list = new java.util.ArrayList[String]()
+				list.add("akka.remote.netty.tcp")
+				conf.put("akka.remote.enabled-transports", list)  //参数是个集合
+				conf.put("akka.actor.provider", "akka.remote.RemoteActorRefProvider")
+				conf.put("akka.remote.netty.tcp.hostname", "127.0.0.1")
+				conf.put("akka.remote.netty.tcp.port", "44443")
+
+				val sys = ActorSystem("myAkkaClientSys", ConfigFactory.parseMap(conf))
+				sys.actorSelection("akka.tcp://myAkkaServerSys@127.0.0.1:44444/user/actor4") ! new Student("xiaohua")
+			}
+		}
+		
