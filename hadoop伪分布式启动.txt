@@ -2,6 +2,7 @@ hadoop伪分布式启动：
 
 cd /usr/local/src/zk/zookeeper-3.4.13/bin/
 ./zkServer.sh start
+./zkServer.sh stop
 
 cd /usr/local/src/hadoop/hadoop-2.7.7
 
