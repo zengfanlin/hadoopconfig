@@ -1,0 +1,277 @@
+一、服务器分配
+	~应用服务器
+		tomcat - windows
+	~日志服务器
+		ngnix Hadoop01
+		tomcat Hadoop02
+		tomcat Hadoop03
+	~flume集群
+		收集日志的agent 
+			Hadoop02
+			Hadoop03
+		中心服务器
+			Park01
+			Park02
+			Park03
+	~Zk
+		Park01
+		Park02
+		Park03
+
+	~hadoop
+		Park01
+		Park02
+		Park03
+		Park04
+		Park05
+
+	~hive
+		Park01
+	~mysql
+		Park01
+
+	~hbase
+		Park01
+		Park02
+		Park03
+
+	~kafka
+		Park01
+		Park02
+		Park03
+
+	~storm
+		Park01
+		Park02
+		Park03
+
+二、Nginx安装配置
+	1.安装gcc
+	方式1 - yum在线安装：
+		//yum install gcc
+		yum install gcc-c++ 
+	方式2 - rpm离线安装：
+		检查是否安装过gcc
+			gcc -v 
+		如果能打印gcc版本则证明系统已经安装过gcc，不需要再安装，跳过此步骤
+
+		下载安装包
+			http://vault.centos.org/6.5/os/x86_64/Packages/
+			ppl-0.10.2-11.el6.x86_64.rpm
+			cloog-ppl-0.15.7-1.2.el6.x86_64.rpm
+			mpfr-2.4.1-6.el6.x86_64.rpm
+			cpp-4.4.7-4.el6.x86_64.rpm
+			kernel-headers-2.6.32-431.el6.x86_64.rpm
+			glibc-headers-2.12-1.132.el6.x86_64.rpm
+			glibc-devel-2.12-1.132.el6.x86_64.rpm
+			gcc-4.4.7-4.el6.x86_64.rpm
+			libstdc++-devel-4.4.7-4.el6.x86_64.rpm
+			gcc-c++-4.4.7-4.el6.x86_64.rpm
+
+		上传到linux中
+
+		按照如上顺序安装
+			rpm -ivh xxx.rpm
+
+	2.安装pcre
+		方式1 - yum在线安装：
+			yum -y install gcc pcre-devel openssl openssl-devel
+		方式2 - 源码离线安装：
+			下载pcre安装包
+				https://sourceforge.net/projects/pcre/files/pcre/
+				pcre-8.39.gz
+				
+			上传到linux
+				
+			解压
+				tar -zxvf pcre-8.39.gz
+			进入pcre目录，执行
+				./configure
+			编译
+				make
+			安装
+				make install
+
+	3.安装zlib-devel  
+		rpm -ivh zlib-devel-1.2.3-29.el6.x86_64.rpm
+
+	4.安装nginx
+			下载ngnix 源码包
+				http://nginx.org/download
+				nginx-1.9.9.tar.gz
+				
+			上传到linux
+
+			解压
+				tar -zxvf nginx-1.9.9.tar.gz
+
+			进入文件夹
+				
+			编译安装
+				./configure --prefix=安装位置 --with-pcre=/root/work/pcre-8.39 #默认位置 /usr/local/nginx
+				make
+				make install
+
+	5.配置nginx
+		在nginx下配置conf/nginx.conf
+
+		upstream backend {
+			#ip_hash;
+			server 123.56.71.150:8080;
+			server 123.56.71.151:8080;
+			server 123.56.71.152:8080;
+		}
+
+		server {  
+			listen       80;  
+			server_name  123.56.71.150;  
+
+			location / {     
+				proxy_connect_timeout   3;     
+				proxy_send_timeout      30;     
+				proxy_read_timeout      30;     
+				proxy_pass http://backend;     
+			}
+
+		}
+		==================================================
+		1、轮询
+			轮询即Round Robin，根据Nginx配置文件中的顺序，依次把客户端的Web请求分发到不同的后端服务器。
+			配置的例子如下：
+				http{ 
+				 upstream sampleapp { 
+				   server <<dns entry or IP Address(optional with port)>>; 
+				   server <<another dns entry or IP Address(optional with port)>>; 
+				 } 
+				 .... 
+				 server{ 
+				   listen 80; 
+				   ... 
+				   location / { 
+				    proxy_pass http://sampleapp; 
+				   }  
+				 } 
+			上面只有1个DNS入口被插入到upstream节，即sampleapp，同样也在后面的proxy_pass节重新提到。
+		2、最少连接
+			Web请求会被转发到连接数最少的服务器上。
+			配置的例子如下：
+				http{ 
+				  upstream sampleapp { 
+				    least_conn; 
+				    server <<dns entry or IP Address(optional with port)>>; 
+				    server <<another dns entry or IP Address(optional with port)>>; 
+				  } 
+				  .... 
+				  server{ 
+				    listen 80; 
+				    ... 
+				    location / { 
+				     proxy_pass http://sampleapp; 
+				    }  
+				  } 
+			上面的例子只是在upstream节添加了least_conn配置。其它的配置同轮询配置。
+		3、IP地址哈希
+			前述的两种负载均衡方案中，同一客户端连续的Web请求可能会被分发到不同的后端服务器进行处理，因此如果涉及到会话Session，那么会话会比较复杂。常见的是基于数据库的会话持久化。要克服上面的难题，可以使用基于IP地址哈希的负载均衡方案。这样的话，同一客户端连续的Web请求都会被分发到同一服务器进行处理。
+			配置的例子如下：
+				http{ 
+				  upstream sampleapp { 
+				    ip_hash; 
+				    server <<dns entry or IP Address(optional with port)>>; 
+				    server <<another dns entry or IP Address(optional with port)>>; 
+				  } 
+				  .... 
+				  server{ 
+				    listen 80; 
+				    ... 
+				    location / { 
+				     proxy_pass http://sampleapp; 
+				    }  
+				  } 
+				上面的例子只是在upstream节添加了ip_hash配置。其它的配置同轮询配置。
+		4、基于权重的负载均衡
+			基于权重的负载均衡即Weighted Load Balancing，这种方式下，我们可以配置Nginx把请求更多地分发到高配置的后端服务器上，把相对较少的请求分发到低配服务器。
+			配置的例子如下：
+				http{ 
+				  upstream sampleapp { 
+				    server <<dns entry or IP Address(optional with port)>> weight=2; 
+				    server <<another dns entry or IP Address(optional with port)>>; 
+				  } 
+				  .... 
+				  server{ 
+				    listen 80; 
+				    ... 
+				    location / { 
+				     proxy_pass http://sampleapp; 
+				    } 
+				 } 
+				上面的例子在服务器地址和端口后weight=2的配置，这意味着，每接收到3个请求，前2个请求会被分发到第一个服务器，第3个请求会分发到第二个服务器，其它的配置同轮询配置。
+				还要说明一点，基于权重的负载均衡和基于IP地址哈希的负载均衡可以组合在一起使用。
+		==================================================
+
+	6.启动和关闭nginx
+		nginx 启动
+
+		nginx -s reload  ：修改配置后重新加载生效
+		nginx -s reopen  ：重新打开日志文件
+		nginx -t -c /path/to/nginx.conf 测试nginx配置文件是否正确
+
+		关闭nginx：
+		nginx -s stop  :快速停止nginx
+		         quit  ：完整有序的停止nginx
+
+		其他的停止nginx 方式：
+
+		ps -ef | grep nginx
+
+		kill -QUIT 主进程号     ：从容停止Nginx
+		kill -TERM 主进程号     ：快速停止Nginx
+		pkill -9 nginx          ：强制停止Nginx
+
+三、tomcat安装
+	1.安装配置
+		上传安装包解压即可
+	2.上传应用
+		将应用打成war包 上传到tomcat webapps目录下
+	
+四、kafka配置
+	创建主题
+		。/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 1 --topic flux
+	#开启消费者测试
+		./kafka-console-consumer.sh --zookeeper localhost:2181 --from-beginning --topic flux
+五、hbase配置
+	创建表
+		create 'flux','cf1'
+六、mysql配置
+	创建表
+		create database fluxdb;
+		use fluxdb;
+		create table tongji_1(
+			reportTime date,
+			pv int,
+			uv int,
+			vv int,
+			br double,
+			newip int,
+			avgtime double,
+			newcust int,
+			avgdeep double
+		); 
+		create table tongji_2(
+			stime DateTime,
+			pv int,
+			uv int,
+			vv int,
+			newip int,
+			newcust int
+		);
+
+		create table tongji_3(
+			stime DateTime,
+			br double,
+			avgtime double,
+			avgdeep double
+		);
+七、storm配置
+	打jar包
+	提交到集群中运行
+			

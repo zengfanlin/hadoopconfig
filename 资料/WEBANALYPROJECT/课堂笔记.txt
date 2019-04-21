@@ -1,0 +1,372 @@
+一、网页埋点
+	1.pv - 点击量 - 用户访问一次页面 发生一个请求响应 就称之为一次点击 - 用户访问一次应用服务器 自动就会通过埋点访问一次日志服务器 - 并不需要收集任何信息 只要在日志服务器中 统计日志总数 将是页面访问总数 就是pv值
+
+	2.uv - 独立访客数 - 一天之内独立访客的数据 - 想办法在日志中标识出当前日志属于哪个用户 - 如何识别一个用户 - 为每个用户都创建一个独一无二的编号保存起来 在提交日志时 带着这个编号 通过这个编号识别日志属于哪个用户 - 这个编号保存在哪里呢？？？？ - session30分钟不用就超时了 不行 所以只能用cookie来保存 - 在用户访问资源时 为用户生成用户编号 保存 在cookie中 后续这个 用户的所有日志提交时 带着这个用户编号 唯一标识当前日志所属的用户
+
+		从cookie中获取用户编号相关cookie的值
+		if(拿不到){
+			用户第一次访问
+			创建一个独一无二的编号 作为用户编号
+			将该用户编号存储到cookie中保存
+			将该用户编号作为参数 作为日志的一部分 准备提交
+		}else{
+			这个用户不是第一次访问
+			复用该用户编号
+			将该用户编号作为参数 作为日志的一部分 准备提交
+		}
+
+	3.vv - 会话总数 - 一天之内所有会话的总数 - 如何识别一天日志是属于哪一个会话呢？ - 为每个会话起一个独一无二的编号 这个会话的所有日志提交时 应该带上这个会话编号 标识日志属于哪个会话 - 这个会话编号存在哪呢？ - 存到cookie中
+
+		从cookie中获取会话相关cookie的值
+		if(获取不到){
+			这是一个新的会话
+			生成一个独一无二的会话编号来唯一的标识当前会话
+			将这个 会话编号 当前会话时间 当前会话访问的页面总数 作为cookie保存到浏览器的内存中
+			将该会话编号作为参数 作为日志的一部分 准备提交
+		}else{
+			if(当前时间 - cookie中获取到的上一次访问间 > 超时时间){
+				虽然cookie存在但是已经超时 应该作为
+				重新生成一个独一无二的会话编号来唯一的标识当前会话
+				将这个 会话编号 当前会话时间 当前会话访问的页面总数 作为cookie保存到浏览器的内存中
+				将该会话编号作为参数 作为日志的一部分 准备提交
+			}else{
+				有cookie 且没有超时
+				复用该cookie中的会话编号 将会话编号 新的访问时间 新的页面总数 作为cookie值 重新保存
+				将这些信息作为参数 作为日志的一部分 准备提交
+			}
+			
+		}
+
+	4.br - 跳出率 - 一天之内跳出的会话总数 占 总的会话总数的比率 - 如何判断一个会话是否是一个跳出的会话 - 一个会话中只有一个访问 则会话为跳出 - 只需要在日志中 寻找 那些只有一条日志记录的会话 这些会话就是跳出的会话
+
+	5.newip - 新增ip总数 - 一天之内所有的ip去重后 在历史数据中从未出现过的数量 - 每条日志对应的客户端的ip地址 - 如何获取客户端ip? - 在客户端获取 或 在服务器端获取 - 客户端js获取ip有难度 另外 客户端获取的ip很有可能是内网ip 无法用来统计 所以选择在服务器端来获取客户机ip
+
+	6.newcust - 新增客户总数 - 一天之内所有的客户编号 去重后 在历史数据中从未出现过的总数 - 每天日志客户编号 - uvid
+
+	7.avgtime - 平均访问时长 - 一天之内所有会话时长的平均值 - 一个会话的时长 - 这个会话中 时间最大的减去时间最小的得到的差值 - 每条日志的开始时间 - 在计算vv时带了当前时间
+
+	8.avgdeep - 平均访问深度 - 一天之内所有会话的访问深度的平均值 - 一个会话的访问深度 - 这个会话访问的所有页面去重的总数 - 每条日志访问的资源地址
+
+
+二、开发flume收集日志
+	1.测试用agent
+		#声明agent
+		a1.sources = r1
+		a1.sinks = k1 k2
+		a1.channels = c1 c2
+
+		#声明source
+		a1.sources.r1.type = avro
+		a1.sources.r1.bind = 0.0.0.0
+		a1.sources.r1.port = 44444
+
+		a1.sources.r1.interceptors = i1
+		a1.sources.r1.interceptors.i1.type = regex_extractor
+		a1.sources.r1.interceptors.i1.regex = ^(?:[^\\|]*\\|){14}\\d*_\\d*_(\\d*)\\|[^\\|]*$
+		a1.sources.r1.interceptors.i1.serializers = s1
+		a1.sources.r1.interceptors.i1.serializers.s1.name = timestamp
+
+		#声明sinks
+		a1.sinks.k1.type = hdfs
+		a1.sinks.k1.hdfs.path = hdfs://hadoop01:9000/flux/reportTime=%Y-%m-%d
+		a1.sinks.k1.hdfs.fileType = DataStream
+		a1.sinks.k1.hdfs.rollInterval = 30
+		a1.sinks.k1.hdfs.rollSize = 0
+		a1.sinks.k1.hdfs.rollCount = 0
+		a1.sinks.k1.hdfs.timeZone = GMT+8
+
+		a1.sinks.k2.type = org.apache.flume.sink.kafka.KafkaSink
+		a1.sinks.k2.brokerList = hadoop01:9092,hadoop02:9092,hadoop03:9092
+		a1.sinks.k2.topic = flux
+		a1.sinks.k2.batchSize = 20
+
+		#声明channel
+		a1.channels.c1.type = memory
+		a1.channels.c1.capacity = 1000
+		a1.channels.c1.transactionCapacity = 100
+		
+		a1.channels.c2.type = memory
+		a1.channels.c2.capacity = 1000
+		a1.channels.c2.transactionCapacity = 100
+
+		#绑定关系
+		a1.sources.r1.channels = c1 c2
+		a1.sinks.k1.channel = c1
+		a1.sinks.k2.channel = c2
+
+	2.集群模式下 客户端agent
+
+	3.集群模式下 中心服务器agent
+
+三、hive进行数据处理
+	1.创建外部分区表管理数据
+		create database flux;
+		use flux;
+		create external table flux (url string,urlname string,title string,chset string,scr string,col string,lg string,ej string,ec string,fv string,cn string,ref string,uagent string,stat_uv string,stat_ss string,cip string) partitioned by (reportTime string) row format delimited fields terminated by '|' location '/flux';
+		alter table flux add partition (reportTime='2017-11-02') location '/flux/reportTime=2017-11-02';
+	2.数据清洗
+		把用不到的字段去除
+		会话相关字段拆分为 会话编号 会话页面总数 会话时间
+
+			url urlname ref uagent uvid ssid sscount sstime cip
+
+		create table dataclear(reportTime string,url string,urlname string,ref string,uagent string,uvid string,ssid string,sscount string,sstime string,cip string) row format delimited fields terminated by '|';
+
+		insert into dataclear select reportTime,url,urlname,ref,uagent,stat_uv,split(stat_ss,'_')[0],split(stat_ss,'_')[1],split(stat_ss,'_')[2],cip from flux where reportTime = '2017-11-02';
+
+	3.数据处理
+		pv:
+			点击量 - 一天之内 客户端对服务器访问的次数 一次访问记为一个pv - 一条日志就是一个pv - 统计当日日志数量 就可以得到当日pv值
+			select count(*) as pv from dataclear where reportTime = '2017-11-02';
+
+		uv:
+			独立访客数 -  一天之内访客去后的数量 - 将今日数据中的uvid去重后计数 得到当日uv
+			select count(distinct uvid) as uv from dataclear where reportTime = '2017-11-02';
+
+		vv:
+			独立会话数 - 一天之内会话的总数 - 将今日数据中的ssid去重后计数 得到当日的vv
+			select count(distinct ssid) as vv from dataclear where reportTime = '2017-11-02';
+
+		br:
+			跳出率 - 一天内 跳出的会话 占 会话总数的比率 - 会话总数 其实就是vv - 跳出的会话 将今日所有的会话 分组中后计数 会话总只有一个日志的会话称为跳出的会话 
+			select round(br_right_tab.br_count / br_left_tab.s_count , 4) as br from (select count(distinct ssid) as s_count from dataclear where reportTime = '2017-11-02') as br_left_tab inner join (select count(*) as br_count from (select ssid,count(*) ucount from dataclear where reportTime = '2017-11-02' group by ssid having ucount == 1) as br_tab)  as br_right_tab;
+
+		newip:
+			新增ip总数 - 一天内 所有ip去重后 在历史数据中从未出现过的总数
+			select count(distinct dataclear.cip) as newip from dataclear where dataclear.reportTime = '2017-11-02' and dataclear.cip not in (select sub_dataclear.cip from dataclear as sub_dataclear where datediff('2017-11-02',sub_dataclear.reportTime)>0);
+
+		newcust:
+			新增客户总数 - 一天之内 所有的uvid 去重后 在历史数据中从未出现过的总数
+			select count(distinct dataclear.uvid) as newcust from dataclear where dataclear.reportTime = '2017-11-02' and dataclear.uvid not in (select sub_dataclear.uvid from dataclear as sub_dataclear where datediff('2017-11-02',sub_dataclear.reportTime)>0);
+
+		avgtime:
+			平均访问时长 - 一天之内 所有会话的访问时长的平均值 - 会话的访问时长 这个会话中 时间最大的减去时间最小的
+			select round(avg(avgtime_tab.usetime),2) as avgtime from (select max(sstime)- min(sstime) as usetime from dataclear where reportTime = '2017-11-02' group by ssid) as avgtime_tab;
+
+		avgdeep:
+			平均访问深度 - 一天之内 所有会话的访问深度的平均值 - 会话的访问深度 这个会话 访问的资源名称 去重后计数
+			select round(avg(avgdeep_tab.un_count),2) as avgdeep from (select count(distinct urlname) as un_count from dataclear where reportTime = '2017-11-02' group by ssid) as avgdeep_tab;
+
+		
+		create table tongji1(
+			reportTime string,
+			pv int,
+			uv int,
+			vv int,
+			br double,
+			newip int,
+			newcust int,
+			avgtime double,
+			avgdeep double
+		) row format delimited fields terminated by '|';
+
+		--create table tongji1( reportTime string, pv int, uv int, vv int, br double, newip int, newcust int, avgtime double, avgdeep double ) row format delimited fields terminated by '|';
+
+		----方案1：
+			insert into tongji1
+				select
+					'2017-11-02',
+					pv_tabx.pv,
+					uv_tabx.uv,
+					vv_tabx.vv,
+					br_tabx.br,
+					newip_tabx.newip,
+					newcust_tabx.newcust,
+					avgtime_tabx.avgtime,
+					avgdeep_tabx.avgdeep
+				from 
+					(select count(*) as pv from dataclear where reportTime = '2017-11-02') as pv_tabx,
+					(select count(distinct uvid) as uv from dataclear where reportTime = '2017-11-02') as uv_tabx,
+					(select count(distinct ssid) as vv from dataclear where reportTime = '2017-11-02') as vv_tabx,
+					(select round(br_right_tab.br_count / br_left_tab.s_count , 4) as br from (select count(distinct ssid) as s_count from dataclear where reportTime = '2017-11-02') as br_left_tab inner join (select count(*) as br_count from (select ssid,count(*) ucount from dataclear where reportTime = '2017-11-02' group by ssid having ucount == 1) as br_tab)  as br_right_tab) as br_tabx,
+					(select count(distinct dataclear.cip) as newip from dataclear where dataclear.reportTime = '2017-11-02' and dataclear.cip not in (select sub_dataclear.cip from dataclear as sub_dataclear where datediff('2017-11-02',sub_dataclear.reportTime)>0)) as newip_tabx,
+					(select count(distinct dataclear.uvid) as newcust from dataclear where dataclear.reportTime = '2017-11-02' and dataclear.uvid not in (select sub_dataclear.uvid from dataclear as sub_dataclear where datediff('2017-11-02',sub_dataclear.reportTime)>0)) as newcust_tabx,
+					(select round(avg(avgtime_tab.usetime),2) as avgtime from (select max(sstime)- min(sstime) as usetime from dataclear where reportTime = '2017-11-02' group by ssid) as avgtime_tab) as avgtime_tabx,
+					(select round(avg(avgdeep_tab.un_count),2) as avgdeep from (select count(distinct urlname) as un_count from dataclear where reportTime = '2017-11-02' group by ssid) as avgdeep_tab) as avgdeep_tabx
+
+			缺点：
+				连接太多 执行效率低
+				转换出来的mr过多 任何一个执行失败 都要重头执行
+
+		----方案2：
+			create table tongji1_temp( reportTime string, fields string, value string ) row format delimited fields terminated by '|';
+
+			insert into tongji1_temp select '2017-11-02','pv',count(*) as pv from dataclear where reportTime = '2017-11-02';
+
+			insert into tongji1_temp select '2017-11-02','uv',count(distinct uvid) as uv from dataclear where reportTime = '2017-11-02';
+			
+			insert into tongji1_temp select '2017-11-02','vv',count(distinct ssid) as vv from dataclear where reportTime = '2017-11-02';
+
+			insert into tongji1_temp select '2017-11-02','br',round(br_right_tab.br_count / br_left_tab.s_count , 4) as br from (select count(distinct ssid) as s_count from dataclear where reportTime = '2017-11-02') as br_left_tab inner join (select count(*) as br_count from (select ssid,count(*) ucount from dataclear where reportTime = '2017-11-02' group by ssid having ucount == 1) as br_tab)  as br_right_tab;
+
+			insert into tongji1_temp select '2017-11-02','newip',count(distinct dataclear.cip) as newip from dataclear where dataclear.reportTime = '2017-11-02' and dataclear.cip not in (select sub_dataclear.cip from dataclear as sub_dataclear where datediff('2017-11-02',sub_dataclear.reportTime)>0);
+
+			insert into tongji1_temp select '2017-11-02','newcust',count(distinct dataclear.uvid) as newcust from dataclear where dataclear.reportTime = '2017-11-02' and dataclear.uvid not in (select sub_dataclear.uvid from dataclear as sub_dataclear where datediff('2017-11-02',sub_dataclear.reportTime)>0);
+			
+			insert into tongji1_temp select '2017-11-02','avgtime',round(avg(avgtime_tab.usetime),2) as avgtime from (select max(sstime)- min(sstime) as usetime from dataclear where reportTime = '2017-11-02' group by ssid) as avgtime_tab;
+
+			insert into tongji1_temp select '2017-11-02','avgdeep',round(avg(avgdeep_tab.un_count),2) as avgdeep from (select count(distinct urlname) as un_count from dataclear where reportTime = '2017-11-02' group by ssid) as avgdeep_tab;
+
+			insert into tongji1 
+			select 
+				'2017-11-02',t1.pv,t2.uv,t3.vv,t4.br,t5.newip,t6.newcust,t7.avgtime,t8.avgdeep 
+			from 
+				(select value as pv from  tongji1_temp where reportTime = '2017-11-02' and fields = 'pv') as t1,
+				(select value as uv from  tongji1_temp where reportTime = '2017-11-02' and fields = 'uv') as t2,
+				(select value as vv from  tongji1_temp where reportTime = '2017-11-02' and fields = 'vv') as t3,
+				(select value as br from  tongji1_temp where reportTime = '2017-11-02' and fields = 'br') as t4,
+				(select value as newip from  tongji1_temp where reportTime = '2017-11-02' and fields = 'newip') as t5,
+				(select value as newcust from  tongji1_temp where reportTime = '2017-11-02' and fields = 'newcust') as t6,
+				(select value as avgtime from  tongji1_temp where reportTime = '2017-11-02' and fields = 'avgtime') as t7,
+				(select value as avgdeep from  tongji1_temp where reportTime = '2017-11-02' and fields = 'avgdeep') as t8;
+				
+
+
+		====hive中的变量使用 和 文件执行=================
+			hive定义变量
+				./hive --define key value
+				或
+				./hive -d key value
+			hive使用变量
+				${hivevar:key} 
+				或 
+				${key}
+			hive调用hql脚本
+				./hive -e "HQL"
+				或
+				./hive -f HQL文件
+		===========================================	
+
+		为了自动化执行，将如上的hql改造，将其中变化的内容用占位符替代 每次启动时 动态指定
+			use flux;
+			alter table flux add partition (reportTime='${flux_date}') location '/flux/reportTime=${flux_date}';
+			insert into dataclear select reportTime,url,urlname,ref,uagent,stat_uv,split(stat_ss,'_')[0],split(stat_ss,'_')[1],split(stat_ss,'_')[2],cip from flux where reportTime = '${flux_date}';
+			insert into tongji1_temp select '${flux_date}','pv',count(*) as pv from dataclear where reportTime = '${flux_date}';
+			insert into tongji1_temp select '${flux_date}','uv',count(distinct uvid) as uv from dataclear where reportTime = '${flux_date}';
+			insert into tongji1_temp select '${flux_date}','vv',count(distinct ssid) as vv from dataclear where reportTime = '${flux_date}';
+			insert into tongji1_temp select '${flux_date}','br',round(br_right_tab.br_count / br_left_tab.s_count , 4) as br from (select count(distinct ssid) as s_count from dataclear where reportTime = '${flux_date}') as br_left_tab inner join (select count(*) as br_count from (select ssid,count(*) ucount from dataclear where reportTime = '${flux_date}' group by ssid having ucount == 1) as br_tab)  as br_right_tab;
+			insert into tongji1_temp select '${flux_date}','newip',count(distinct dataclear.cip) as newip from dataclear where dataclear.reportTime = '${flux_date}' and dataclear.cip not in (select sub_dataclear.cip from dataclear as sub_dataclear where datediff('${flux_date}',sub_dataclear.reportTime)>0);
+			insert into tongji1_temp select '${flux_date}','newcust',count(distinct dataclear.uvid) as newcust from dataclear where dataclear.reportTime = '${flux_date}' and dataclear.uvid not in (select sub_dataclear.uvid from dataclear as sub_dataclear where datediff('${flux_date}',sub_dataclear.reportTime)>0);
+			insert into tongji1_temp select '${flux_date}','avgtime',round(avg(avgtime_tab.usetime),2) as avgtime from (select max(sstime)- min(sstime) as usetime from dataclear where reportTime = '${flux_date}' group by ssid) as avgtime_tab;
+			insert into tongji1_temp select '${flux_date}','avgdeep',round(avg(avgdeep_tab.un_count),2) as avgdeep from (select count(distinct urlname) as un_count from dataclear where reportTime = '${flux_date}' group by ssid) as avgdeep_tab;
+			insert into tongji1  select  '${flux_date}',t1.pv,t2.uv,t3.vv,t4.br,t5.newip,t6.newcust,t7.avgtime,t8.avgdeep  from  (select value as pv from  tongji1_temp where reportTime = '${flux_date}' and fields = 'pv') as t1, (select value as uv from  tongji1_temp where reportTime = '${flux_date}' and fields = 'uv') as t2, (select value as vv from  tongji1_temp where reportTime = '${flux_date}' and fields = 'vv') as t3, (select value as br from  tongji1_temp where reportTime = '${flux_date}' and fields = 'br') as t4, (select value as newip from  tongji1_temp where reportTime = '${flux_date}' and fields = 'newip') as t5, (select value as newcust from  tongji1_temp where reportTime = '${flux_date}' and fields = 'newcust') as t6, (select value as avgtime from  tongji1_temp where reportTime = '${flux_date}' and fields = 'avgtime') as t7, (select value as avgdeep from  tongji1_temp where reportTime = '${flux_date}' and fields = 'avgdeep') as t8; 
+
+		再在启动时通过以下方式动态指定变量值：
+			./hive -f /root/work/tongji.hql -d flux_date '2017-11-02'
+
+		增加定时任务：
+			/root/work/apache-hive-1.2.0-bin/bin/hive -f /root/work/flux.hql -d flux_date $(date +%Y-%m-%d)
+
+	4.导出数据
+		在mysql中建立表：
+			create database flux;
+			use flux;
+			create table tongji1(
+				reportTime date,
+				pv int,
+				uv int,
+				vv int,
+				br double,
+				newip int,
+				newcust int,
+				avgtime double,
+				avgdeep double
+			);
+
+		利用sqoop导出数据:
+			./sqoop export --connect jdbc:mysql://hadoop01:3306/fluxdb --username root --password root --export-dir '/user/hive/warehouse/flux.db/tongji1' --table tongji1 -m 1 --fields-terminated-by '|'
+
+
+四、实时处理
+	0.从flume向kakfa写入数据
+
+	1.从storm中消费kafka的数据进行处理
+
+	2.开发bolt处理业务逻辑
+		清洗数据：
+			将多余的字段清除
+			会话相关字段拆分
+			url urlname ref uagent uvid ssid sscount sstime cip
+		pv - 点击量 - 一次访问就称之为一个点击 - 一条日志就是一个点击量 - 在实时计算中 来一条日志 就认为pv 为1
+		uv - 独立访客数 - 一天之内独立访客的数量 - 一天之内所有uvid去重后的总数 - 在实时分析中 一条日志 获取其uvid 判断这个uvid在今天这条日志之前的数据中是否出现过 如果没有出现过则uv为1 否则为0 - 历史uvid存在哪？ - storm中间数据的存储 - 选择hbase
+			HBase表设计:
+				列族
+					不宜过多 越少越好 最多不要超过3个
+					如果真的需要多个列族 则经常要一起查询的数据要放在一个列族中
+					如果真的需要多个列族 要考虑数据均匀的问题
+				行键
+					唯一
+					有意义
+					最好是字符串类型
+					固定长度
+					不宜过长
+
+					散列原则
+					有序原则
+			   		sstime_uvid_ssid_cip_rand(3)
+				create 'flux','cf1'
+		vv - 会话数量 - 一天之内会话的总数 - 一天之内所有会话id去重后计数 - 在实时分析场景下 一条日志过来 获取其ssid 在这条日志之前今天的数据中去查找 是否有这个ssid的数据 如果没有 则是一个新的vv 否则就不是 - 更简单的办法是 当获取到一条日志时 查看其sscount 是否为0 如果是0 标识这是一个新的会话的第一个页面 vv记为1 否则记为0
+
+		newip - 新增ip总数 - 一天之内 所有ip去重后 在历史数据中从未出现过的总数 - 在实时计算中 一条日志过来 获取其ip 在历史ip中寻找 如果找不到 newip为1 否则为0
+
+		newcust - 新增客户耍 - 一天之内 所有的uvid 去重后 在历史数据中从未出现过的数据 - 在实时计算在红 一天日志过来 获取其uvid 在历史uvid中寻找 如果找不到 则newcust为1 否则为0
+
+		ToMySqlBolt - 将处理完成 结果写出到mysql
+			use fluxdb;
+			create table tongji2(
+				reportTime date,
+				pv int,
+				uv int,
+				vv int,
+				newip int,
+				newcust int
+			);
+			
+
+
+
+
+
+		br - 跳出率 - 一天之内跳出的会话总数 占 所有会话总数的比率 - 需要攒一堆数据进行计算 无法确定之后是否还有请求 无法认定已经跳出 - 这个指标不适合在实时计算中处理
+
+		avgtime - 平均访问时长 - 一天之内所有的会话访问时长的平均值  - 需要攒一堆数据进行计算 且 无法确定之后是否还有请求 无法认定会话已经结束 - 这个指标不适合在实时计算中处理
+
+		avgdeep - 平均访问深度 - 一天之内所有会话访问深度的平均值 - 需要攒一对数据进行计算 且 无法判断之后是否还有请求 无法认定会话已经结束 - 这个指标不适合在实时计算中处理
+
+		===Storm的tick机制--定时触发任务机制======================
+			storm在0.8以上的版本中提供了tick机制实现定时任务。
+			它能够让任何bolt的所有task每隔一段时间（精确到秒级，用户可以自定义）收到一个来自_systemd的_tick stream的tick tuple，bolt收到这样的tuple后可以根据业务需求完成相应的处理。
+			方式一：为某一个特定的bolt指定定时任务
+				在bolt中覆盖getComponentConfiguration，在其中设置conf的属性TOPOLOGY_TICK_TUPLE_FREQ_SECS设置为指定时间间隔
+					@Override
+					public Map<String, Object> getComponentConfiguration() {
+						Config conf = new Config();
+						conf.put(conf.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 900);
+						return conf;
+					}
+				这样这个bolt将会在程序启动后每隔指定时长都会收到一个定时发送tuple来触发程序
+				在execute方法中可以使用如下判断获知是否是定时任务出发的代码：
+					if (tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)  && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID)){
+						//是定时tuple触发的
+					}else{
+						//是普通tuple触发的
+					}
+			方式二：可以为整个topology指定定时任务，这样整个topology中的所有bolt都会定时收到tuple
+				代码如下
+					Config conf = new Config();
+					conf.put(conf.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 7);
+				如果即设置了全局定时器 又为某个bolt单独制定定时器，则单独启动的起作用。
+		==================================================		
+
+
+		将结果写入数据库：
+			use fluxdb;
+			create table tongji3(
+				time timestamp,
+				br double,
+				avgtime double,
+				avgdeep double
+			);
+
+
+		
