@@ -179,13 +179,13 @@
 			//Array[String] = Array(hello, world, hello, count, world, spark)
 			rdd.flatMap(_.split{" "})
 		
-		(9)cache 缓存
+		(9)cache 缓存：只有内存缓存这一个级别
 			可以为rdd设置缓存
 			rdd.cache()
 			这样当未来需要重新获取rdd中的数据时 不需要重新创建 直接可以从还从中得到数据从而提升效率
 			这个缓存信息可以在spark的ui管理界面中查看到
 			
-		(10)persist 缓存
+		(10)persist 缓存：能设置缓存级别和参数
 			import org.apache.spark.storage.StorageLevel
 			rdd.persist(StorageLevel.MEMORY_ONLY_SER)
 
