@@ -1,0 +1,73 @@
+
+
+/usr/local/src/mongodb/bin/mongod -config /usr/local/src/mongodb/data/mongodb.conf
+
+/usr/local/src/mongodb/bin/mongod -shutdown -config /usr/local/src/mongodb/data/mongodb.conf
+
+[root@localhost mongodb]# ./bin/mongod --repair
+
+wget http://download.redis.io/releases/redis-4.0.2.tar.gz
+cp ~/redis-4.0.2/redis.conf /etc/
+
+
+[root@bigdata redis-4.0.2]# redis-server redis.conf
+
+export PATH=/usr/libexec/gcc/x86_64-redhat-linux/4.4.4/:$PATH
+
+
+https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.2.tar.gz
+
+vi /etc/security/limits.conf
+* soft nofile 65536
+* hard nofile 131072
+* soft nproc 2048
+* hard nproc 4096
+
+vi /etc/security/limits.d/90-nproc.conf
+
+vi /etc/sysctl.conf
+vm.max_map_count=655360
+
+
+vi ./config/elasticsearch.yml
+
+cluster.name: es-cluster #设置集群的名称
+node.name: es-node #修改当前节点的名称
+path.data: /home/bigdata/cluster/elasticsearch-5.6.2/data #修改数据路径
+path.logs: /home/bigdata/cluster/elasticsearch-5.6.2/logs #修改日志路径
+bootstrap.memory_lock: false #设置 ES 节点允许内存交换
+bootstrap.system_call_filter: false #禁用系统调用过滤器
+network.host: linux #设置当前主机名称
+discovery.zen.ping.unicast.hosts: ["linux"] #设置集群的主机列表
+
+建议创建一个单独的用户用来运行ElasticSearch
+
+创建elsearch用户组及elsearch用户
+
+groupadd elsearch
+useradd elsearch -g elsearch -p 123456
+更改elasticsearch文件夹及内部文件的所属用户及组为elsearch:elsearch
+
+cd /usr/local/src/
+chown -R elsearch:elsearch  elasticsearch
+切换到elsearch用户再启动
+
+su elsearch cd /usr/local/src/elasticsearch/bin
+./elasticsearch
+
+需要配置hosts
+
+vim /etc/hosts
+
+jps  kill -9 关闭
+
+
+bin/kafka-server-start.sh -daemon ./config/server.properties
+
+
+bin/kafka-topics.sh --create --zookeeper bigdata:2181 --replication-factor 1 --partitions 1 --topic recommender
+
+bin/kafka-console-producer.sh --broker-list bigdata:9092 --topic recommender
+bin/kafka-console-consumer.sh --bootstrap-server bigdata:9092 --topic recommender
+
+cnpm install -g @angular/cli

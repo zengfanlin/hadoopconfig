@@ -39,3 +39,5 @@ rpm -ql pcre-8.32-17.el7.x86_64
 
 编译安装
 ./configure --prefix=/usr/local/src/ngnix --with-pcre=/usr/local/src/pcre/pcre-8.39
+
+查看版本：cat /etc/redhat-release

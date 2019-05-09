@@ -40,6 +40,11 @@ source /etc/profile
 查看启动失败的服务列表：systemctl --failed
 firewall-cmd --state
 
+6.9中为：
+状态：service iptables status
+关闭服务：service iptables stop
+永久关闭：chkconfig iptables off
+
 
 安装zk：
 zk]# tar -xvf zookeeper-3.4.13.tar.gz
